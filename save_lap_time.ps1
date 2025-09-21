@@ -102,8 +102,8 @@ function Save-LapTimeToExcel {
             $allData = @($lapData)
         }
         
-        # Export to Excel
-        $allData | Export-Excel -Path $excelFile -AutoSize -TableStyle Medium2 -WorksheetName "Lap Times"
+        # Export to Excel with manual formatting to avoid table issues
+        $allData | Export-Excel -Path $excelFile -AutoSize -WorksheetName "Lap Times" -BoldTopRow -FreezeTopRow
         
         Write-Host "Lap time saved successfully!" -ForegroundColor Green
         Write-Host "Run Number: $RunNumber" -ForegroundColor Cyan
