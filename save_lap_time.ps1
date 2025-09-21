@@ -67,6 +67,17 @@ function Convert-LapTimeToSeconds {
     return ($minutes * 60) + $seconds
 }
 
+
+# Function to convert seconds back to lap time format
+function Convert-SecondsToLapTime {
+    param([double]$Seconds)
+    
+    $minutes = [math]::Floor($Seconds / 60)
+    $remainingSeconds = $Seconds % 60
+    
+    return "{0}:{1:F3}" -f $minutes, $remainingSeconds
+}
+
 # Function to create or update Excel file
 function Save-LapTimeToExcel {
     param(
@@ -80,13 +91,34 @@ function Save-LapTimeToExcel {
     $excelFile = Join-Path $BasePath "lap_times.xlsx"
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     
+    # Calculate last lap time if this is a final lap
+    $lastLapTime = ""
+    $lastLapTimeSeconds = ""
+    
+    if ($IsFinalLap) {
+        # Get all previous laps for this run
+        $existingData = @()
+        if (Test-Path $excelFile) {
+            $existingData = Import-Excel -Path $excelFile
+        }
+        
+        $previousLaps = $existingData | Where-Object { $_.RunNumber -eq $RunNumber -and $_.IsFinalLap -eq $false }
+        $currentLapSeconds = Convert-LapTimeToSeconds -TimeString $LapTime
+        $previousLapsSum = ($previousLaps | Measure-Object -Property LapTimeSeconds -Sum).Sum
+        
+        if ($previousLapsSum -gt 0) {
+            $lastLapTimeSeconds = $currentLapSeconds - $previousLapsSum
+            $lastLapTime = Convert-SecondsToLapTime -Seconds $lastLapTimeSeconds
+        }
+    }
+    
     # Create data object
     $lapData = [PSCustomObject]@{
         Timestamp      = $timestamp
         RunNumber      = $RunNumber
         LapNumber      = $LapNumber
-        Time           = $LapTime
-        LapTimeSeconds = Convert-LapTimeToSeconds -TimeString $LapTime
+        Time           = if ($IsFinalLap -and $lastLapTime -ne "") { $lastLapTime } else { $LapTime }
+        LapTimeSeconds = if ($IsFinalLap -and $lastLapTimeSeconds -ne "") { $lastLapTimeSeconds } else { Convert-LapTimeToSeconds -TimeString $LapTime }
         IsFinalLap     = $IsFinalLap
     }
     
@@ -95,6 +127,17 @@ function Save-LapTimeToExcel {
         if (Test-Path $excelFile) {
             # Import existing data
             $existingData = Import-Excel -Path $excelFile
+            
+            # Ensure all existing data has the new columns
+            foreach ($item in $existingData) {
+                if (-not $item.PSObject.Properties.Name -contains "LastLapTime") {
+                    $item | Add-Member -NotePropertyName "LastLapTime" -NotePropertyValue "" -Force
+                }
+                if (-not $item.PSObject.Properties.Name -contains "LastLapTimeSeconds") {
+                    $item | Add-Member -NotePropertyName "LastLapTimeSeconds" -NotePropertyValue "" -Force
+                }
+            }
+            
             # Convert to array and add new data
             $allData = @($existingData) + @($lapData)
         }
