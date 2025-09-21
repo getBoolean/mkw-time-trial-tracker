@@ -85,7 +85,7 @@ function Save-LapTimeToExcel {
         Timestamp      = $timestamp
         RunNumber      = $RunNumber
         LapNumber      = $LapNumber
-        LapTime        = $LapTime
+        Time           = $LapTime
         LapTimeSeconds = Convert-LapTimeToSeconds -TimeString $LapTime
         IsFinalLap     = $IsFinalLap
     }
@@ -122,7 +122,7 @@ function Save-LapTimeToExcel {
 # Main execution
 try {
     # Ensure ImportExcel module is available
-    Test-ImportExcelModule
+    ImportExcelModule
     
     # Validate lap time format
     if (-not (Test-LapTimeFormat -TimeString $LapTime)) {
