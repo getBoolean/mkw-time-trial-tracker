@@ -173,7 +173,7 @@ Manually generates a composite image showing all lap times for a specific run ov
 
 **Example output:**
 
-![Lap Splits Image](docs/LapSplits_image.png)
+![Lap Splits Image](docs/LapTimes_image.png)
 
 ### Quick start: import provided macros (recommended)
 
