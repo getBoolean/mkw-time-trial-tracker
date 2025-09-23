@@ -8,6 +8,11 @@ on:
       - "!gh-pages"
     tags:
       - "v*"
+  release:
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build-wheels:
@@ -43,7 +48,7 @@ jobs:
         shell: bash
         run: |
           echo "CIBW_BUILD=cp310-*" >> $GITHUB_ENV
-          echo "CIBW_SKIP=pp* *-musllinux_*" >> $GITHUB_ENV
+          echo "CIBW_SKIP=*-musllinux_*" >> $GITHUB_ENV
           echo "CIBW_TEST_SKIP=*" >> $GITHUB_ENV
           echo "CIBW_ARCHS_LINUX=x86_64" >> $GITHUB_ENV
           echo "CIBW_ARCHS_MACOS=x86_64 arm64" >> $GITHUB_ENV
@@ -105,6 +110,14 @@ jobs:
           name: bundle-${{ matrix.os }}-py3.10
           path: bundle_artifacts/*.zip
 
+      - name: Release wheels and bundle
+        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: wheelhouse/*.whl,bundle_artifacts/*.zip
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+
   build-sdist:
     name: Build sdist
     runs-on: ubuntu-22.04
@@ -125,3 +138,11 @@ jobs:
         with:
           name: sdist
           path: dist/*.tar.gz
+
+      - name: Release sdist
+        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: dist/*.tar.gz
+          allowUpdates: true
+          omitBodyDuringUpdate: true
