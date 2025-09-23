@@ -2518,9 +2518,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
 
         # Generate output filename
         safe_track = make_filesystem_safe(track_from_csv)
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
         output_filename = (
-            f"LapTimes_{safe_track}_Run-{actual_run_number}_{timestamp}.png"
+            f"Splits_{safe_track}_Run-{actual_run_number}.png"
         )
         output_path = os.path.join(base_path, output_filename)
 
