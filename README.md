@@ -1,6 +1,6 @@
 # mk-time-trial-tracker
 
-A comprehensive OBS Studio script for the Advanced Scene Switcher plugin that provides automatic track name correction and lap time recording for Mario Kart Wii time trials.
+A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plugin that provides automatic track detection and lap time recording for Mario Kart World time trials.
 
 ## Quick setup
 
@@ -20,7 +20,7 @@ A comprehensive OBS Studio script for the Advanced Scene Switcher plugin that pr
 
 - **Track Autocorrect**: Automatically identifies and corrects track names from OCR text
 - **Lap Time Recording**: Save lap times to CSV with automatic calculations
-- **Lap Times Image Generation**: Automatically create composite images showing all lap times overlaid on final screenshots
+- **Lap Splits Image Generation**: Automatically create composite images showing all lap times overlaid on final screenshots
 - **Fuzzy Matching**: Uses intelligent matching to handle OCR errors and variations
 - **Cross-Platform**: Pure Python implementation works on Windows, macOS, and Linux
 - **Queue System**: Automatic queuing when CSV files are locked, with manual processing option
@@ -154,7 +154,7 @@ Moves image files matching a pattern to a destination subfolder for organization
 - **File Pattern**: Pattern to match files (default: `Lap-*.png`)
 - **Destination Subfolder**: Subfolder name to move files to (default: `lap times`)
 
-#### 4. MKW Generate Lap Times Image Action
+#### 4. MKW Generate Lap Splits Image Action
 
 Manually generates a composite image showing all lap times for a specific run overlaid on a screenshot.
 
@@ -166,14 +166,14 @@ Manually generates a composite image showing all lap times for a specific run ov
 
 **Features:**
 
-- Automatically combines lap times with screenshot
+- Automatically combines lap times with screenshot (generated from the final screenshot)
 - Shows individual lap times and total time
 - Outputs file named `LapTimes_[Track]_Run[X]_[timestamp].png`
 - Automatically triggered when final lap is saved with "Is Final Lap" checked
 
 **Example output:**
 
-![Lap Times Image](docs/LapTimes_image.png)
+![Lap Splits Image](docs/LapSplits_image.png)
 
 ### Quick start: import provided macros (recommended)
 
