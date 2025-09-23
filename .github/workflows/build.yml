@@ -91,7 +91,7 @@ jobs:
           zip_name = f"bundle-{safe_os}-py{py_ver}.zip"
           zip_path = bundle_dir / zip_name
 
-          exclude_dirs = {'.git', '.mypy_cache', '.pytest_cache', '__pycache__', 'bundle_artifacts'}
+          exclude_dirs = {'.git', '.github', 'originals', '.mypy_cache', '.pytest_cache', '__pycache__', 'bundle_artifacts', '.gitattributes', '.gitignore'}
 
           with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
             for path in repo_root.rglob('*'):
