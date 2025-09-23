@@ -68,6 +68,37 @@ Or download the repository as a ZIP file:
    - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
    - **Script Repo Path**: Path to this repository (optional, for future features)
 
+### Prefer prebuilt release (no build needed)
+
+To avoid building the optional C extension locally, use the prebuilt release bundle for your OS:
+
+1. Download the latest release from GitHub Releases (pick the bundle matching your OS):
+   - `bundle-ubuntu-22.04-py310.zip` (Linux x86_64)
+   - `bundle-windows-2022-py310.zip` (Windows x64)
+   - `bundle-macos-13-py310.zip` (macOS x86_64/arm64)
+2. Extract the ZIP anywhere (e.g., `C:\dev\mk-time-trial-tracker` or `~/mk-time-trial-tracker`).
+3. Optional (recommended): install the included fast module wheel from the `wheelhouse/` folder.
+   - Windows (PowerShell):
+
+     ```bash
+     py -m pip install --upgrade pip
+     py -m pip install wheelhouse\*.whl
+     ```
+
+   - macOS/Linux:
+
+     ```bash
+     python3 -m pip install --upgrade pip
+     python3 -m pip install wheelhouse/*.whl
+     ```
+
+4. In OBS, load the script from the extracted folder: **Tools** → **Scripts** → **+** → select `TimeTrialTracker.py`.
+
+Notes:
+
+- The wheel is built for Python 3.10 (`cp310`). If you skip installing it, the script will fall back to pure Python (slower) automatically.
+- You can still update macros/config exactly the same as when cloning the repo.
+
 ### Optional: Build fast C module (Windows/macOS/Linux)
 
 To speed up lap times image generation, build the optional C extension. It is cross-platform and works on Windows, macOS, and Linux.
