@@ -8,6 +8,18 @@ import json
 import time
 import csv
 
+# PIL for image processing
+try:
+    from PIL import Image, ImageDraw, ImageFont
+
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    obs.script_log(
+        obs.LOG_WARNING,
+        "PIL (Pillow) not available. Lap time image generation will be disabled.",
+    )
+
 action_name = "MKW Track"
 
 # New action for saving lap times
@@ -15,6 +27,9 @@ save_action_name = "MKW Save Lap"
 
 # New action for moving old images
 move_images_action_name = "MKW Move Old Images"
+
+# New action for generating lap time images
+generate_image_action_name = "MKW Generate Lap Times Image"
 
 # Script-level settings (updated via script_update)
 g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
@@ -308,6 +323,14 @@ def script_load(settings):
         get_move_images_action_defaults(),
         None,
     )
+    # Register Generate Lap Times Image action
+    advss_register_action(
+        generate_image_action_name,
+        run_action_generate_image,
+        get_generate_image_action_properties,
+        get_generate_image_action_defaults(),
+        None,
+    )
 
 
 def script_unload():
@@ -315,6 +338,7 @@ def script_unload():
     advss_deregister_action(action_name)
     advss_deregister_action(save_action_name)
     advss_deregister_action(move_images_action_name)
+    advss_deregister_action(generate_image_action_name)
 
 
 ###############################################################################
@@ -828,16 +852,34 @@ def _flush_queue(base_path):
     failed = []
     for it in items:
         try:
+            lap_time = str(it.get("LapTime", "")).strip()
+            lap_number = int(it.get("LapNumber", 0))
+            is_final_lap = bool(it.get("IsFinalLap", False))
+            run_number = int(it.get("RunNumber", 0))
+            track = it.get("Track", "")
+            coins = int(it.get("Coins", 0))
+            shrooms = int(it.get("Shrooms", 0))
+
             _save_lap_to_csv(
                 base_path,
-                str(it.get("LapTime", "")).strip(),
-                int(it.get("LapNumber", 0)),
-                bool(it.get("IsFinalLap", False)),
-                int(it.get("RunNumber", 0)),
-                it.get("Track", ""),
-                int(it.get("Coins", 0)),
-                int(it.get("Shrooms", 0)),
+                lap_time,
+                lap_number,
+                is_final_lap,
+                run_number,
+                track,
+                coins,
+                shrooms,
             )
+
+            # If this is the final lap from queue, create the lap times image
+            if is_final_lap:
+                try:
+                    _create_lap_times_image(base_path, run_number, track)
+                except Exception as e:
+                    obs.script_log(
+                        obs.LOG_WARNING,
+                        f"Failed to create lap times image from queue: {e}",
+                    )
         except Exception as e:
             obs.script_log(obs.LOG_WARNING, f"Failed to flush a queued item: {e}")
             failed.append(it)
@@ -867,6 +909,207 @@ def _on_process_queue_button(props, prop):
 
     threading.Thread(target=worker, args=()).start()
     return True
+
+
+###############################################################################
+# Lap times image generation
+###############################################################################
+
+
+def _get_lap_times_for_run(base_path, run_number, track):
+    """Get all lap times for a specific run and track from CSV data"""
+    if not PIL_AVAILABLE:
+        return []
+
+    csv_path = _csv_file_path(base_path)
+    if not os.path.exists(csv_path):
+        return []
+
+    try:
+        headers, existing = _read_csv_data(csv_path)
+
+        # Get all laps for this run
+        run_laps = [
+            r
+            for r in existing
+            if str(r.get("RunNumber")) == str(run_number)
+            and str(r.get("Track")) == str(track)
+        ]
+
+        # Sort by lap number
+        run_laps.sort(key=lambda x: int(x.get("LapNumber", 0)))
+
+        lap_times = []
+        for lap in run_laps:
+            lap_num = int(lap.get("LapNumber", 0))
+            lap_time = lap.get("Time", "")
+            is_final = str(lap.get("IsFinalLap", "")).lower() in ("true", "1")
+
+            if lap_time:
+                lap_times.append(
+                    {"lap_number": lap_num, "time": lap_time, "is_final": is_final}
+                )
+
+        return lap_times
+
+    except Exception as e:
+        obs.script_log(
+            obs.LOG_WARNING, f"Error reading lap times for image generation: {e}"
+        )
+        return []
+
+
+def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=None):
+    """Create a composite image with lap times overlaid"""
+    if not PIL_AVAILABLE:
+        obs.script_log(
+            obs.LOG_WARNING, "Cannot create lap times image: PIL not available"
+        )
+        return None
+
+    try:
+        # Get lap times for this run
+        lap_times = _get_lap_times_for_run(base_path, run_number, track)
+        if not lap_times:
+            obs.script_log(obs.LOG_WARNING, "No lap times found for image generation")
+            return None
+
+        # Try to find the most recent screenshot to use as base
+        base_image = None
+        if final_screenshot_path and os.path.exists(final_screenshot_path):
+            base_image = Image.open(final_screenshot_path)
+        else:
+            # Look for recent screenshots in the base path
+            import glob
+
+            screenshot_patterns = [
+                os.path.join(base_path, "*.png"),
+                os.path.join(base_path, "*.jpg"),
+                os.path.join(base_path, "*.jpeg"),
+            ]
+
+            recent_screenshots = []
+            for pattern in screenshot_patterns:
+                recent_screenshots.extend(glob.glob(pattern))
+
+            if recent_screenshots:
+                # Get the most recently modified screenshot
+                recent_screenshots.sort(key=os.path.getmtime, reverse=True)
+                base_image = Image.open(recent_screenshots[0])
+
+        # If no screenshot found, create a blank image
+        if base_image is None:
+            base_image = Image.new("RGB", (1920, 1080), color=(30, 30, 30))
+
+        # Make a copy to work with
+        result_image = base_image.copy()
+        draw = ImageDraw.Draw(result_image)
+
+        # Try to load a font, fall back to default if not available
+        try:
+            # Try to find a system font
+            font_large = ImageFont.truetype("arial.ttf", 48)
+            font_medium = ImageFont.truetype("arial.ttf", 36)
+        except (OSError, IOError):
+            try:
+                # Try alternative font names
+                font_large = ImageFont.truetype("Arial.ttf", 48)
+                font_medium = ImageFont.truetype("Arial.ttf", 36)
+            except (OSError, IOError):
+                # Use default font
+                font_large = ImageFont.load_default()
+                font_medium = ImageFont.load_default()
+
+        # Calculate total time
+        total_seconds = 0.0
+        for lap in lap_times:
+            try:
+                total_seconds += _convert_laptime_to_seconds(lap["time"])
+            except (ValueError, TypeError):
+                pass
+
+        total_time_str = _convert_seconds_to_laptime(total_seconds)
+
+        # Image dimensions
+        img_width, img_height = result_image.size
+
+        # Create semi-transparent overlay for text background
+        overlay = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+
+        # Calculate text area dimensions
+        text_area_width = 400
+        text_area_height = 60 + (len(lap_times) * 50) + 100  # Header + laps + total
+
+        # Position text area (top-right corner with some padding)
+        text_x = img_width - text_area_width - 50
+        text_y = 50
+
+        # Draw semi-transparent background for text
+        overlay_draw.rectangle(
+            [
+                text_x - 20,
+                text_y - 20,
+                text_x + text_area_width + 20,
+                text_y + text_area_height + 20,
+            ],
+            fill=(0, 0, 0, 180),
+        )
+
+        # Combine overlay with main image
+        result_image = Image.alpha_composite(
+            result_image.convert("RGBA"), overlay
+        ).convert("RGB")
+        draw = ImageDraw.Draw(result_image)
+
+        # Draw title
+        current_y = text_y
+        draw.text(
+            (text_x, current_y),
+            f"Track: {track}",
+            font=font_medium,
+            fill=(255, 255, 255),
+        )
+        current_y += 50
+
+        # Draw each lap time
+        for lap in lap_times:
+            lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
+            color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
+            draw.text((text_x, current_y), lap_text, font=font_medium, fill=color)
+            current_y += 50
+
+        # Draw separator line
+        draw.line(
+            [(text_x, current_y), (text_x + text_area_width - 40, current_y)],
+            fill=(255, 255, 255),
+            width=2,
+        )
+        current_y += 20
+
+        # Draw total time
+        draw.text(
+            (text_x, current_y),
+            f"Total: {total_time_str}",
+            font=font_large,
+            fill=(100, 255, 100),
+        )
+
+        # Generate output filename
+        safe_track = make_filesystem_safe(track)
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        output_filename = f"LapTimes_{safe_track}_Run{run_number}_{timestamp}.png"
+        output_path = os.path.join(base_path, output_filename)
+
+        # Save the image
+        result_image.save(output_path, "PNG")
+        obs.script_log(obs.LOG_INFO, f"Created lap times image: {output_filename}")
+
+        return output_path
+
+    except Exception as e:
+        obs.script_log(obs.LOG_ERROR, f"Error creating lap times image: {e}")
+        return None
 
 
 ###############################################################################
@@ -1058,6 +1301,16 @@ def run_action_save_lap(data, instance_id):
             coins,
             shrooms,
         )
+
+        # If this is the final lap, create the lap times image
+        if is_final_lap:
+            try:
+                _create_lap_times_image(g_base_path, run_number, track)
+            except Exception as e:
+                obs.script_log(
+                    obs.LOG_WARNING, f"Failed to create lap times image: {e}"
+                )
+
         return True
     except Exception as e:
         # Fallback to queue if CSV write fails
@@ -1120,4 +1373,84 @@ def run_action_move_images(data, instance_id):
 
     except Exception as e:
         obs.script_log(obs.LOG_WARNING, f"Move images action failed: {e}")
+        return False
+
+
+###############################################################################
+# Generate Lap Times Image action definitions
+###############################################################################
+
+
+def get_generate_image_action_properties():
+    props = obs.obs_properties_create()
+    obs.obs_properties_add_text(
+        props, "run_number_var", "Run Number Variable Name", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props, "track_var", "Track Variable Name", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props,
+        "screenshot_path_var",
+        "Screenshot Path Variable (optional)",
+        obs.OBS_TEXT_DEFAULT,
+    )
+    return props
+
+
+def get_generate_image_action_defaults():
+    defaults = obs.obs_data_create()
+    obs.obs_data_set_default_string(defaults, "run_number_var", "TT Run Number")
+    obs.obs_data_set_default_string(defaults, "track_var", "Current Track")
+    obs.obs_data_set_default_string(defaults, "screenshot_path_var", "")
+    return defaults
+
+
+def run_action_generate_image(data, instance_id):
+    try:
+        # Get variable names from action settings
+        run_number_var = obs.obs_data_get_string(data, "run_number_var")
+        track_var = obs.obs_data_get_string(data, "track_var")
+        screenshot_path_var = obs.obs_data_get_string(data, "screenshot_path_var")
+
+        # Get values from variables
+        run_number_str = advss_get_variable_value(run_number_var)
+        track = advss_get_variable_value(track_var)
+        screenshot_path = (
+            advss_get_variable_value(screenshot_path_var)
+            if screenshot_path_var
+            else None
+        )
+
+        # Validate that required variables exist
+        if run_number_str is None:
+            obs.script_log(
+                obs.LOG_WARNING, f"Run number variable '{run_number_var}' not found"
+            )
+            return False
+        if track is None:
+            obs.script_log(obs.LOG_WARNING, f"Track variable '{track_var}' not found")
+            return False
+
+        # Convert string values to appropriate types
+        run_number = int(run_number_str.strip())
+        track = track.strip()
+
+        # Generate the image
+        result = _create_lap_times_image(
+            g_base_path, run_number, track, screenshot_path
+        )
+
+        if result:
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Successfully generated lap times image: {os.path.basename(result)}",
+            )
+            return True
+        else:
+            obs.script_log(obs.LOG_WARNING, "Failed to generate lap times image")
+            return False
+
+    except Exception as e:
+        obs.script_log(obs.LOG_WARNING, f"Generate image action failed: {e}")
         return False

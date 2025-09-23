@@ -20,6 +20,7 @@ A comprehensive OBS Studio script for the Advanced Scene Switcher plugin that pr
 
 - **Track Autocorrect**: Automatically identifies and corrects track names from OCR text
 - **Lap Time Recording**: Save lap times to CSV with automatic calculations
+- **Lap Times Image Generation**: Automatically create composite images showing all lap times overlaid on final screenshots
 - **Fuzzy Matching**: Uses intelligent matching to handle OCR errors and variations
 - **Cross-Platform**: Pure Python implementation works on Windows, macOS, and Linux
 - **Queue System**: Automatic queuing when CSV files are locked, with manual processing option
@@ -32,6 +33,7 @@ Before setting up this script, ensure you have:
 
 1. **OBS Studio** (latest version recommended)
 2. **Advanced Scene Switcher Plugin** - Download from [GitHub](https://github.com/WarmUpTill/SceneSwitcher)
+3. **PIL/Pillow** (optional, for lap times image generation) - Install with `pip install Pillow` or run `install_dependencies.py`
 
 ## Installation
 
@@ -56,7 +58,23 @@ Or download the repository as a ZIP file:
 2. Install the plugin following the instructions in the repository
 3. Restart OBS Studio after installation
 
-### Step 3: Add the Script
+### Step 3: Install Dependencies (Optional)
+
+For lap times image generation features, install PIL/Pillow:
+
+```bash
+python install_dependencies.py
+```
+
+Or manually install with pip:
+
+```bash
+pip install Pillow
+```
+
+**Note**: The script will work without PIL/Pillow, but lap times image generation will be disabled.
+
+### Step 4: Add the Script
 
 1. Open OBS Studio
 2. Go to **Tools** → **Scripts**
@@ -71,7 +89,7 @@ Or download the repository as a ZIP file:
 
 ### Available Actions
 
-The script provides three main Advanced Scene Switcher actions:
+The script provides four main Advanced Scene Switcher actions:
 
 #### 1. MKW Track Action
 
@@ -105,6 +123,24 @@ Moves image files matching a pattern to a destination subfolder for organization
 
 - **File Pattern**: Pattern to match files (default: `Lap-*.png`)
 - **Destination Subfolder**: Subfolder name to move files to (default: `lap times`)
+
+#### 4. MKW Generate Lap Times Image Action
+
+Manually generates a composite image showing all lap times for a specific run overlaid on a screenshot.
+
+**Variable Inputs:**
+
+- **Run Number Variable Name**: Variable containing the run number to generate image for
+- **Track Variable Name**: Variable containing the track name
+- **Screenshot Path Variable**: (Optional) Variable containing path to specific screenshot to use as base
+
+**Features:**
+
+- Automatically combines lap times with screenshot
+- Shows individual lap times and total time
+- Creates semi-transparent overlay for readability
+- Outputs file named `LapTimes_[Track]_Run[X]_[timestamp].png`
+- Automatically triggered when final lap is saved with "Is Final Lap" checked
 
 ### Quick start: import provided macros (recommended)
 
@@ -325,6 +361,20 @@ Lap times are saved to `lap_times.csv` in your configured base path with these c
 - **Track**: Track name
 - **Coins**: Coins collected this lap (calculated as difference from previous laps)
 - **Shrooms**: Mushrooms used this lap (calculated as difference from previous laps)
+
+#### Lap Times Images
+
+When PIL/Pillow is installed, the system automatically generates composite images when a final lap is saved:
+
+- **Automatic Generation**: Triggered when saving a lap with "Is Final Lap" checked
+- **Manual Generation**: Use the "MKW Generate Lap Times Image" action to create images from existing data
+- **File Format**: Images saved as `LapTimes_[Track]_Run[X]_[timestamp].png`
+- **Content**: Shows all lap times overlaid on the most recent screenshot with:
+  - Track name at the top
+  - Individual lap times (final lap highlighted in yellow)
+  - Total race time at the bottom
+  - Semi-transparent dark background for text readability
+- **Base Image**: Uses the most recent screenshot, or creates a blank image if none found
 
 #### Using Variables
 
