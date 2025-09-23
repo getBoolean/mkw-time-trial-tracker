@@ -747,6 +747,68 @@ def _convert_seconds_to_laptime(seconds_val):
     return f"{minutes}:{remaining:06.3f}"
 
 
+def _normalize_laptime_format(time_str):
+    """Normalize lap time string to always show 3 decimal places (m:ss.mmm format)"""
+    if not time_str:
+        return "0:00.000"
+
+    original_time = str(time_str).strip()
+
+    # Convert to seconds and back to ensure consistent formatting
+    try:
+        seconds_val = _convert_laptime_to_seconds(time_str)
+        normalized = _convert_seconds_to_laptime(seconds_val)
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Normalized '{original_time}' -> '{normalized}' (via seconds conversion)",
+        )
+        return normalized
+    except (ValueError, TypeError):
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Seconds conversion failed for '{original_time}', trying manual formatting",
+        )
+        # If conversion fails, try to fix common formatting issues
+        time_str = str(time_str).strip()
+
+        # Handle format like "25.4" -> "0:25.400"
+        if ":" not in time_str and "." in time_str:
+            parts = time_str.split(".")
+            if len(parts) == 2:
+                seconds = int(parts[0])
+                decimal = parts[1].ljust(3, "0")[:3]  # Pad to 3 decimals
+                minutes = seconds // 60
+                seconds = seconds % 60
+                result = f"{minutes}:{seconds:02d}.{decimal}"
+                obs.script_log(
+                    obs.LOG_INFO, f"Manual format 1: '{original_time}' -> '{result}'"
+                )
+                return result
+
+        # Handle format like "0:25.4" -> "0:25.400"
+        if ":" in time_str and "." in time_str:
+            time_parts = time_str.split(":")
+            if len(time_parts) == 2:
+                minutes = int(time_parts[0])
+                sec_parts = time_parts[1].split(".")
+                if len(sec_parts) == 2:
+                    seconds = int(sec_parts[0])
+                    decimal = sec_parts[1].ljust(3, "0")[:3]  # Pad to 3 decimals
+                    result = f"{minutes}:{seconds:02d}.{decimal}"
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Manual format 2: '{original_time}' -> '{result}'",
+                    )
+                    return result
+
+        # Fallback
+        obs.script_log(
+            obs.LOG_WARNING,
+            f"Could not normalize lap time '{original_time}', using fallback",
+        )
+        return "0:00.000"
+
+
 def _get_closest_supported_resolution(width, height):
     """Determine the closest supported resolution for given dimensions.
 
@@ -966,12 +1028,24 @@ def _save_lap_to_csv(
     coins_to_save = int(coins) - int(prev_coins)
     shrooms_to_save = int(shrooms) - int(prev_shrooms)
 
+    # Normalize the lap time to ensure consistent 3-decimal formatting
+    if last_lap_time:
+        # Final lap - already properly formatted
+        time_to_save = last_lap_time
+        obs.script_log(obs.LOG_INFO, f"Saving final lap time: '{time_to_save}'")
+    else:
+        # Regular lap - normalize the input lap_time to ensure proper formatting
+        time_to_save = _normalize_laptime_format(lap_time)
+        obs.script_log(
+            obs.LOG_INFO, f"Saving regular lap time: '{lap_time}' -> '{time_to_save}'"
+        )
+
     # Build new row
     new_row = {
         "Timestamp": now_ts,
         "RunNumber": str(int(run_number)),
         "LapNumber": str(int(lap_number)),
-        "Time": last_lap_time if last_lap_time else str(lap_time),
+        "Time": time_to_save,
         "LapTimeSeconds": str(last_lap_seconds if last_lap_time else current_seconds),
         "IsFinalLap": str(bool(is_final_lap)),
         "Track": str(track),
@@ -1197,13 +1271,40 @@ def _get_lap_times_for_run(base_path, run_number):
         lap_times = []
         for lap in run_laps:
             lap_num = int(lap.get("LapNumber", 0))
-            lap_time = lap.get("Time", "")
+            lap_time_seconds = lap.get("LapTimeSeconds", "")
             is_final = str(lap.get("IsFinalLap", "")).lower() in ("true", "1")
 
-            if lap_time:
-                lap_times.append(
-                    {"lap_number": lap_num, "time": lap_time, "is_final": is_final}
-                )
+            if lap_time_seconds:
+                try:
+                    # Convert from seconds to display format for consistency
+                    seconds_val = float(lap_time_seconds)
+                    display_time = _convert_seconds_to_laptime(seconds_val)
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Using accurate seconds for lap {lap_num}: {lap_time_seconds}s -> '{display_time}'",
+                    )
+                    lap_times.append(
+                        {
+                            "lap_number": lap_num,
+                            "time": display_time,
+                            "is_final": is_final,
+                        }
+                    )
+                except (ValueError, TypeError):
+                    # Fallback to string time if seconds conversion fails
+                    lap_time_str = lap.get("Time", "")
+                    if lap_time_str:
+                        obs.script_log(
+                            obs.LOG_WARNING,
+                            f"Fallback to string time for lap {lap_num}: '{lap_time_str}'",
+                        )
+                        lap_times.append(
+                            {
+                                "lap_number": lap_num,
+                                "time": lap_time_str,
+                                "is_final": is_final,
+                            }
+                        )
 
         return lap_times, track_from_csv
 
@@ -2444,6 +2545,13 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             )
             return None
 
+        # Also get the raw run data for accurate total calculation
+        csv_path = _csv_file_path(base_path)
+        _, existing = _read_csv_data(csv_path)
+        run_laps = [
+            r for r in existing if str(r.get("RunNumber")) == str(actual_run_number)
+        ]
+
         # Load background image if available (prefer C loader on Windows)
         background_pixels, bg_width, bg_height = None, 0, 0
         if screenshot_path and os.path.exists(screenshot_path):
@@ -2560,15 +2668,26 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
         text_x = margin_x
         text_y = margin_y
 
-        # Calculate total time
+        # Calculate total time using accurate seconds from CSV (using the same data as above)
         total_seconds = 0.0
-        for lap in lap_times:
-            try:
-                total_seconds += _convert_laptime_to_seconds(lap["time"])
-            except (ValueError, TypeError):
-                pass
+        for lap in run_laps:
+            lap_time_seconds = lap.get("LapTimeSeconds", "")
+            if lap_time_seconds:
+                try:
+                    seconds_val = float(lap_time_seconds)
+                    total_seconds += seconds_val
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Adding lap {lap.get('LapNumber', '?')} to total: {seconds_val}s",
+                    )
+                except (ValueError, TypeError):
+                    pass
 
         total_time_str = _convert_seconds_to_laptime(total_seconds)
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Total time calculated from accurate seconds: {total_seconds}s -> '{total_time_str}'",
+        )
 
         current_y = text_y + base_padding
 
@@ -2962,11 +3081,17 @@ def run_action_save_lap(data, instance_id):
         csv_path = _csv_file_path(g_base_path)
         if os.path.exists(csv_path) and _test_csv_locked(csv_path):
             obs.script_log(obs.LOG_INFO, "CSV is locked; queueing submission")
+            # Normalize lap time before queueing
+            normalized_lap_time = _normalize_laptime_format(lap_time)
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Queueing lap time: '{lap_time}' -> '{normalized_lap_time}'",
+            )
             _add_to_queue(
                 g_base_path,
                 {
                     "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "LapTime": lap_time,
+                    "LapTime": normalized_lap_time,
                     "LapNumber": int(lap_number),
                     "IsFinalLap": bool(is_final_lap),
                     "RunNumber": int(run_number),
@@ -3006,11 +3131,17 @@ def run_action_save_lap(data, instance_id):
         # Fallback to queue if CSV write fails
         obs.script_log(obs.LOG_WARNING, f"Saving to CSV failed, queueing instead: {e}")
         try:
+            # Normalize lap time before queueing in fallback case too
+            normalized_lap_time = _normalize_laptime_format(lap_time)
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Fallback queueing lap time: '{lap_time}' -> '{normalized_lap_time}'",
+            )
             _add_to_queue(
                 g_base_path,
                 {
                     "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "LapTime": lap_time,
+                    "LapTime": normalized_lap_time,
                     "LapNumber": lap_number,
                     "IsFinalLap": is_final_lap,
                     "RunNumber": run_number,
