@@ -1,21 +1,31 @@
 from setuptools import setup, Extension
 import os
 
-extra_compile_args = ["-O3"]
+# Platform-specific compiler flags
+extra_compile_args = []
+extra_link_args = []
 libraries = []
 define_macros = []
 
 if os.name == "nt":
-    # Link GDI+ for fast PNG loading
+    # MSVC flags; require C++17 for newer Windows SDK GDI+ headers
+    extra_compile_args.extend(["/O2", "/std:c++17"])
+    # Link GDI+ for fast PNG loading on Windows only
     libraries.append("gdiplus")
+else:
+    # GCC/Clang flags for Linux/macOS
+    extra_compile_args.extend(["-O3", "-std=c++17"])
 
 ext_modules = [
     Extension(
         "lapimg",
         sources=["fast_lapimg/lapimg.cpp"],
         extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
         libraries=libraries,
         define_macros=define_macros,
+        # language is inferred from .cpp, but being explicit is harmless
+        language="c++",
     )
 ]
 
