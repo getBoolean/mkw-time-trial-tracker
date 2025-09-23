@@ -3,8 +3,19 @@ import obspython as obs
 # Required by advss helpers
 import threading
 from typing import NamedTuple
+import os
+import json
+import time
+import csv
 
 action_name = "MKW Track"
+
+# New action for saving lap times
+save_action_name = "MKW Save Lap"
+
+# Script-level settings (updated via script_update)
+g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
+g_repo_path = ""
 
 
 ###############################################################################
@@ -222,6 +233,48 @@ def script_description():
     return f'Adds the macro action "{action_name}" for the advanced scene switcher'
 
 
+def script_properties():
+    props = obs.obs_properties_create()
+    obs.obs_properties_add_path(
+        props,
+        "base_path",
+        "Base Path",
+        obs.OBS_PATH_DIRECTORY,
+        None,
+        None,
+    )
+    obs.obs_properties_add_path(
+        props,
+        "repo_path",
+        "Script Repo Path",
+        obs.OBS_PATH_DIRECTORY,
+        None,
+        None,
+    )
+    obs.obs_properties_add_button(
+        props,
+        "process_queue_btn",
+        "Process Queue Now",
+        _on_process_queue_button,
+    )
+    return props
+
+
+def script_defaults(settings):
+    obs.obs_data_set_default_string(settings, "base_path", g_base_path)
+    obs.obs_data_set_default_string(settings, "repo_path", g_repo_path)
+
+
+def script_update(settings):
+    global g_base_path, g_repo_path
+    base_path_val = obs.obs_data_get_string(settings, "base_path")
+    repo_path_val = obs.obs_data_get_string(settings, "repo_path")
+    if base_path_val:
+        g_base_path = base_path_val
+    if repo_path_val:
+        g_repo_path = repo_path_val
+
+
 ###############################################################################
 # Main script entry point
 ###############################################################################
@@ -236,11 +289,20 @@ def script_load(settings):
         get_action_defaults(),
         get_action_macro_properties(),
     )
+    # Register Save Lap Time action
+    advss_register_action(
+        save_action_name,
+        run_action_save_lap,
+        get_save_action_properties,
+        get_save_action_defaults(),
+        None,
+    )
 
 
 def script_unload():
     global action_name
     advss_deregister_action(action_name)
+    advss_deregister_action(save_action_name)
 
 
 ###############################################################################
@@ -510,3 +572,390 @@ def advss_set_variable_value(name, value):
 
     obs.calldata_destroy(data)
     return success
+
+
+###############################################################################
+# Lap time saving functionality (cross-platform, CSV files)
+###############################################################################
+
+
+def _csv_file_path(base_path):
+    return os.path.join(base_path, "lap_times.csv")
+
+
+def _queue_file_path(base_path):
+    return os.path.join(base_path, "lap_times_queue.json")
+
+
+def _ensure_dir(path):
+    try:
+        os.makedirs(path, exist_ok=True)
+    except Exception:
+        pass
+
+
+def _test_csv_locked(path):
+    try:
+        # Try a lightweight open to detect sharing violations (mostly on Windows)
+        f = open(path, "a+b")
+        try:
+            if hasattr(os, "fsync"):
+                os.fsync(f.fileno())
+        finally:
+            f.close()
+        return False
+    except Exception:
+        return True
+
+
+def _read_queue(base_path):
+    qpath = _queue_file_path(base_path)
+    if not os.path.exists(qpath):
+        return []
+    try:
+        with open(qpath, "r", encoding="utf-8") as f:
+            raw = f.read()
+            if not raw.strip():
+                return []
+            data = json.loads(raw)
+            if isinstance(data, list):
+                return data
+            else:
+                return [data]
+    except Exception as e:
+        try:
+            backup = qpath + ".bak_" + time.strftime("%Y%m%d%H%M%S")
+            try:
+                with open(qpath, "rb") as src, open(backup, "wb") as dst:
+                    dst.write(src.read())
+            except Exception:
+                pass
+            os.remove(qpath)
+        except Exception:
+            pass
+        obs.script_log(obs.LOG_WARNING, f"Queue file corrupt, cleared: {e}")
+        return []
+
+
+def _write_queue(base_path, items):
+    qpath = _queue_file_path(base_path)
+    _ensure_dir(os.path.dirname(qpath))
+    with open(qpath, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, indent=2)
+
+
+def _add_to_queue(base_path, submission):
+    items = _read_queue(base_path)
+    items.append(submission)
+    _write_queue(base_path, items)
+
+
+def _convert_laptime_to_seconds(time_str):
+    if time_str is None:
+        return 0.0
+    s = str(time_str).strip()
+    parts = s.split(":", 1)
+    minutes = int(parts[0])
+    seconds = float(parts[1])
+    return minutes * 60.0 + seconds
+
+
+def _convert_seconds_to_laptime(seconds_val):
+    minutes = int(seconds_val // 60)
+    remaining = seconds_val % 60.0
+    return f"{minutes}:{remaining:06.3f}"
+
+
+def _validate_inputs(
+    lap_time, lap_number, is_final_lap, run_number, track, coins, shrooms
+):
+    # Lap time format m:ss.mmm
+    import re
+
+    if not lap_time or not re.match(r"^\d+:\d{2}\.\d{3}$", str(lap_time).strip()):
+        raise ValueError("Invalid lap time format. Expected 0:00.000")
+    if int(lap_number) < 1:
+        raise ValueError("Lap number must be greater than 0")
+    if int(run_number) < 1:
+        raise ValueError("Run number must be greater than 0")
+    if not str(track).strip():
+        raise ValueError("Track name must be provided")
+    c = int(coins)
+    if c < 0 or c > 20:
+        raise ValueError("Coins must be between 0 and 20")
+    s = int(shrooms)
+    if s < 0 or s > 3:
+        raise ValueError("Shrooms must be between 0 and 3")
+
+
+def _read_csv_data(csv_path):
+    """Read existing CSV data and return headers and rows as dictionaries"""
+    if not os.path.exists(csv_path):
+        return [], []
+
+    try:
+        with open(csv_path, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            headers = reader.fieldnames or []
+            rows = list(reader)
+            return headers, rows
+    except Exception:
+        return [], []
+
+
+def _write_csv_data(csv_path, headers, rows):
+    """Write CSV data with given headers and rows"""
+    _ensure_dir(os.path.dirname(csv_path))
+    with open(csv_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _save_lap_to_csv(
+    base_path, lap_time, lap_number, is_final_lap, run_number, track, coins, shrooms
+):
+    _ensure_dir(base_path)
+    csv_path = _csv_file_path(base_path)
+
+    if os.path.exists(csv_path) and _test_csv_locked(csv_path):
+        raise PermissionError("CSV file is locked")
+
+    # Read existing data
+    headers, existing = _read_csv_data(csv_path)
+
+    # Define required headers
+    required_headers = [
+        "Timestamp",
+        "RunNumber",
+        "LapNumber",
+        "Time",
+        "LapTimeSeconds",
+        "IsFinalLap",
+        "Track",
+        "Coins",
+        "Shrooms",
+        "LastLapTime",
+        "LastLapTimeSeconds",
+    ]
+
+    # Ensure all required headers are present
+    for header in required_headers:
+        if header not in headers:
+            headers.append(header)
+
+    # Calculate last lap and per-lap coins/shrooms
+    now_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    current_seconds = _convert_laptime_to_seconds(lap_time)
+
+    # Previous laps for this run (non-final)
+    prev_laps_same_run = [
+        r
+        for r in existing
+        if str(r.get("RunNumber")) == str(run_number)
+        and str(r.get("IsFinalLap", "")).lower() in ("false", "0", "none", "")
+    ]
+    prev_sum_seconds = 0.0
+    for r in prev_laps_same_run:
+        try:
+            prev_sum_seconds += float(r.get("LapTimeSeconds", 0) or 0.0)
+        except Exception:
+            pass
+
+    last_lap_time = ""
+    last_lap_seconds = ""
+    if str(is_final_lap).lower() in ("true", "1"):
+        if prev_sum_seconds > 0.0:
+            last_lap_val = max(0.0, current_seconds - prev_sum_seconds)
+            last_lap_time = _convert_seconds_to_laptime(last_lap_val)
+            last_lap_seconds = last_lap_val
+
+    # Coins/shrooms per lap
+    prev_same_run = [r for r in existing if str(r.get("RunNumber")) == str(run_number)]
+    prev_coins = 0
+    prev_shrooms = 0
+    for r in prev_same_run:
+        try:
+            prev_coins += int(r.get("Coins", 0) or 0)
+        except Exception:
+            pass
+        try:
+            prev_shrooms += int(r.get("Shrooms", 0) or 0)
+        except Exception:
+            pass
+
+    coins_to_save = int(coins) - int(prev_coins)
+    shrooms_to_save = int(shrooms) - int(prev_shrooms)
+
+    # Build new row
+    new_row = {
+        "Timestamp": now_ts,
+        "RunNumber": str(int(run_number)),
+        "LapNumber": str(int(lap_number)),
+        "Time": last_lap_time if last_lap_time else str(lap_time),
+        "LapTimeSeconds": str(last_lap_seconds if last_lap_time else current_seconds),
+        "IsFinalLap": str(bool(is_final_lap)),
+        "Track": str(track),
+        "Coins": str(coins_to_save),
+        "Shrooms": str(shrooms_to_save),
+        "LastLapTime": last_lap_time,
+        "LastLapTimeSeconds": str(last_lap_seconds) if last_lap_seconds else "",
+    }
+
+    # Add new row to existing data
+    existing.append(new_row)
+
+    # Write back to CSV
+    _write_csv_data(csv_path, headers, existing)
+
+
+def _flush_queue(base_path):
+    csv_path = _csv_file_path(base_path)
+    if os.path.exists(csv_path) and _test_csv_locked(csv_path):
+        obs.script_log(obs.LOG_INFO, "CSV locked; skipping queue flush")
+        return
+    items = _read_queue(base_path)
+    if not items:
+        return
+    failed = []
+    for it in items:
+        try:
+            _save_lap_to_csv(
+                base_path,
+                str(it.get("LapTime", "")).strip(),
+                int(it.get("LapNumber", 0)),
+                bool(it.get("IsFinalLap", False)),
+                int(it.get("RunNumber", 0)),
+                it.get("Track", ""),
+                int(it.get("Coins", 0)),
+                int(it.get("Shrooms", 0)),
+            )
+        except Exception as e:
+            obs.script_log(obs.LOG_WARNING, f"Failed to flush a queued item: {e}")
+            failed.append(it)
+            break
+        if os.path.exists(csv_path) and _test_csv_locked(csv_path):
+            # Keep remainder
+            idx = items.index(it)
+            failed.extend(items[idx + 1 :])
+            break
+    if failed:
+        _write_queue(base_path, failed)
+    else:
+        qpath = _queue_file_path(base_path)
+        try:
+            if os.path.exists(qpath):
+                os.remove(qpath)
+        except Exception:
+            pass
+
+
+def _on_process_queue_button(props, prop):
+    def worker():
+        try:
+            _flush_queue(g_base_path)
+        except Exception as e:
+            obs.script_log(obs.LOG_WARNING, f"Process queue failed: {e}")
+
+    threading.Thread(target=worker, args=()).start()
+    return True
+
+
+###############################################################################
+# Save Lap Time action definitions
+###############################################################################
+
+
+def get_save_action_properties():
+    props = obs.obs_properties_create()
+    obs.obs_properties_add_text(
+        props, "lap_time", "Lap Time (m:ss.mmm)", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_int(props, "lap_number", "Lap Number", 1, 999999, 1)
+    obs.obs_properties_add_bool(props, "is_final_lap", "Is Final Lap")
+    obs.obs_properties_add_int(props, "run_number", "Run Number", 1, 999999, 1)
+    obs.obs_properties_add_text(props, "track", "Track", obs.OBS_TEXT_DEFAULT)
+    obs.obs_properties_add_int(props, "coins", "Coins (0-20)", 0, 20, 1)
+    obs.obs_properties_add_int(props, "shrooms", "Shrooms (0-3)", 0, 3, 1)
+    return props
+
+
+def get_save_action_defaults():
+    defaults = obs.obs_data_create()
+    obs.obs_data_set_default_string(defaults, "lap_time", "1:23.456")
+    obs.obs_data_set_default_int(defaults, "lap_number", 1)
+    obs.obs_data_set_default_bool(defaults, "is_final_lap", False)
+    obs.obs_data_set_default_int(defaults, "run_number", 1)
+    obs.obs_data_set_default_string(defaults, "track", "Mario Circuit")
+    obs.obs_data_set_default_int(defaults, "coins", 0)
+    obs.obs_data_set_default_int(defaults, "shrooms", 0)
+    return defaults
+
+
+def run_action_save_lap(data, instance_id):
+    try:
+        lap_time = obs.obs_data_get_string(data, "lap_time").strip()
+        lap_number = obs.obs_data_get_int(data, "lap_number")
+        is_final_lap = obs.obs_data_get_bool(data, "is_final_lap")
+        run_number = obs.obs_data_get_int(data, "run_number")
+        track = obs.obs_data_get_string(data, "track")
+        coins = obs.obs_data_get_int(data, "coins")
+        shrooms = obs.obs_data_get_int(data, "shrooms")
+
+        _validate_inputs(
+            lap_time, lap_number, is_final_lap, run_number, track, coins, shrooms
+        )
+
+        csv_path = _csv_file_path(g_base_path)
+        if os.path.exists(csv_path) and _test_csv_locked(csv_path):
+            obs.script_log(obs.LOG_WARNING, "CSV is locked; queueing submission")
+            _add_to_queue(
+                g_base_path,
+                {
+                    "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "LapTime": lap_time,
+                    "LapNumber": int(lap_number),
+                    "IsFinalLap": bool(is_final_lap),
+                    "RunNumber": int(run_number),
+                    "Track": track,
+                    "Coins": int(coins),
+                    "Shrooms": int(shrooms),
+                },
+            )
+            return True
+
+        # Try flushing queue first
+        _flush_queue(g_base_path)
+
+        # Save current submission
+        _save_lap_to_csv(
+            g_base_path,
+            lap_time,
+            lap_number,
+            is_final_lap,
+            run_number,
+            track,
+            coins,
+            shrooms,
+        )
+        return True
+    except Exception as e:
+        # Fallback to queue if CSV write fails
+        obs.script_log(obs.LOG_WARNING, f"Saving to CSV failed, queueing instead: {e}")
+        try:
+            _add_to_queue(
+                g_base_path,
+                {
+                    "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "LapTime": obs.obs_data_get_string(data, "lap_time").strip(),
+                    "LapNumber": obs.obs_data_get_int(data, "lap_number"),
+                    "IsFinalLap": obs.obs_data_get_bool(data, "is_final_lap"),
+                    "RunNumber": obs.obs_data_get_int(data, "run_number"),
+                    "Track": obs.obs_data_get_string(data, "track"),
+                    "Coins": obs.obs_data_get_int(data, "coins"),
+                    "Shrooms": obs.obs_data_get_int(data, "shrooms"),
+                },
+            )
+        except Exception as e2:
+            obs.script_log(obs.LOG_WARNING, f"Failed to queue submission: {e2}")
+        return False
