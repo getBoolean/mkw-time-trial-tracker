@@ -1,0 +1,7 @@
+Timestamp,RunNumber,LapNumber,Time,LapTimeSeconds,IsFinalLap,Track,Coins,Shrooms
+9/23/2025 12:25,104,1,00:25.4,25.443,FALSE,DK Spaceport,0,0
+9/23/2025 12:25,104,2,00:15.5,15.503,FALSE,DK Spaceport,0,1
+9/23/2025 12:26,104,3,00:13.3,13.333,FALSE,DK Spaceport,0,0
+9/23/2025 12:26,104,4,00:14.8,14.84,FALSE,DK Spaceport,0,1
+9/23/2025 12:26,104,5,00:13.2,13.182,FALSE,DK Spaceport,0,1
+9/23/2025 12:27,104,6,00:13.5,13.535,TRUE,DK Spaceport,0,0

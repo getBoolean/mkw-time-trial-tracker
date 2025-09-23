@@ -333,6 +333,7 @@ static PyObject *py_draw_overlay_on_rgb(PyObject *self, PyObject *args) {
 #ifdef _WIN32
 static PyObject *py_load_image_rgb(PyObject *self, PyObject *args);
 static PyObject *py_save_png(PyObject *self, PyObject *args);
+static PyObject *py_resize_image_rgb(PyObject *self, PyObject *args);
 #endif
 
 static PyMethodDef Methods[] = {
@@ -347,6 +348,8 @@ static PyMethodDef Methods[] = {
      (char *)"Load image via GDI+ and return (bytes,width,height) in RGB"},
     {"save_png", (PyCFunction)py_save_png, METH_VARARGS,
      (char *)"Save RGB buffer to PNG file path using a fast encoder"},
+    {"resize_image_rgb", (PyCFunction)py_resize_image_rgb, METH_VARARGS,
+     (char *)"Resize RGB image data using nearest neighbor interpolation"},
 #endif
     {NULL, NULL, 0, NULL}};
 
@@ -541,6 +544,57 @@ static PyObject *py_save_png(PyObject *self, PyObject *args) {
     ret = PyBool_FromLong(0);
   GdiplusShutdown(token);
   return ret;
+}
+
+static PyObject *py_resize_image_rgb(PyObject *self, PyObject *args) {
+  PyObject *rgb_bytes;
+  int old_width, old_height, new_width, new_height;
+  
+  if (!PyArg_ParseTuple(args, "Oiiii", &rgb_bytes, &old_width, &old_height, &new_width, &new_height)) {
+    return NULL;
+  }
+  
+  if (!PyBytes_Check(rgb_bytes)) {
+    PyErr_SetString(PyExc_TypeError, "Expected bytes object");
+    return NULL;
+  }
+  
+  Py_ssize_t old_size = PyBytes_Size(rgb_bytes);
+  if (old_size != (Py_ssize_t)(old_width * old_height * 3)) {
+    PyErr_SetString(PyExc_ValueError, "Input buffer size mismatch");
+    return NULL;
+  }
+  
+  // Create output buffer
+  Py_ssize_t new_size = (Py_ssize_t)(new_width * new_height * 3);
+  PyObject *result = PyBytes_FromStringAndSize(NULL, new_size);
+  if (!result) {
+    return NULL;
+  }
+  
+  const uint8_t *src = (const uint8_t *)PyBytes_AS_STRING(rgb_bytes);
+  uint8_t *dst = (uint8_t *)PyBytes_AS_STRING(result);
+  
+  // Simple nearest neighbor resize
+  for (int new_y = 0; new_y < new_height; ++new_y) {
+    int old_y = (new_y * old_height) / new_height;
+    if (old_y >= old_height) old_y = old_height - 1;
+    
+    for (int new_x = 0; new_x < new_width; ++new_x) {
+      int old_x = (new_x * old_width) / new_width;
+      if (old_x >= old_width) old_x = old_width - 1;
+      
+      // Copy RGB pixel
+      const uint8_t *src_pixel = src + (old_y * old_width + old_x) * 3;
+      uint8_t *dst_pixel = dst + (new_y * new_width + new_x) * 3;
+      
+      dst_pixel[0] = src_pixel[0];  // R
+      dst_pixel[1] = src_pixel[1];  // G
+      dst_pixel[2] = src_pixel[2];  // B
+    }
+  }
+  
+  return result;
 }
 
 // load_image_rgb is already included in Methods above on Windows

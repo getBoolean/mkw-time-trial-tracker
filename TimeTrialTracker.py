@@ -28,6 +28,37 @@ g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
 g_repo_path = ""
 g_lap_times_scale = 3.0  # Fixed scale factor for lap times box size
 
+# Supported resolution configurations with hardcoded values
+SUPPORTED_RESOLUTIONS = {
+    "1080p": {
+        "width": 1920,
+        "height": 1080,
+        "font_size": 16,
+        "char_spacing": 13,
+        "base_padding": 5,
+        "line_spacing": 30,
+        "margin": 30,
+    },
+    "1440p": {
+        "width": 2560,
+        "height": 1440,
+        "font_size": 18,
+        "char_spacing": 21,
+        "base_padding": 7,
+        "line_spacing": 33,
+        "margin": 60,
+    },
+    "2160p": {
+        "width": 3840,
+        "height": 2160,
+        "font_size": 24,
+        "char_spacing": 27,
+        "base_padding": 10,
+        "line_spacing": 50,
+        "margin": 80,
+    },
+}
+
 # Optional fast C extension
 try:
     import lapimg  # type: ignore
@@ -305,6 +336,15 @@ def script_update(settings):
 
 def script_load(settings):
     global action_name
+    obs.script_log(obs.LOG_INFO, "=== SCRIPT LOAD DEBUG ===")
+    obs.script_log(
+        obs.LOG_INFO,
+        f"SUPPORTED_RESOLUTIONS during script load: {SUPPORTED_RESOLUTIONS}",
+    )
+    obs.script_log(
+        obs.LOG_INFO, f"g_lap_times_scale during script load: {g_lap_times_scale}"
+    )
+    obs.script_log(obs.LOG_INFO, "=== END SCRIPT LOAD DEBUG ===")
     advss_register_action(
         action_name,
         run_action,
@@ -707,6 +747,168 @@ def _convert_seconds_to_laptime(seconds_val):
     return f"{minutes}:{remaining:06.3f}"
 
 
+def _normalize_laptime_format(time_str):
+    """Normalize lap time string to always show 3 decimal places (m:ss.mmm format)"""
+    if not time_str:
+        return "0:00.000"
+
+    original_time = str(time_str).strip()
+
+    # Convert to seconds and back to ensure consistent formatting
+    try:
+        seconds_val = _convert_laptime_to_seconds(time_str)
+        normalized = _convert_seconds_to_laptime(seconds_val)
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Normalized '{original_time}' -> '{normalized}' (via seconds conversion)",
+        )
+        return normalized
+    except (ValueError, TypeError):
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Seconds conversion failed for '{original_time}', trying manual formatting",
+        )
+        # If conversion fails, try to fix common formatting issues
+        time_str = str(time_str).strip()
+
+        # Handle format like "25.4" -> "0:25.400"
+        if ":" not in time_str and "." in time_str:
+            parts = time_str.split(".")
+            if len(parts) == 2:
+                seconds = int(parts[0])
+                decimal = parts[1].ljust(3, "0")[:3]  # Pad to 3 decimals
+                minutes = seconds // 60
+                seconds = seconds % 60
+                result = f"{minutes}:{seconds:02d}.{decimal}"
+                obs.script_log(
+                    obs.LOG_INFO, f"Manual format 1: '{original_time}' -> '{result}'"
+                )
+                return result
+
+        # Handle format like "0:25.4" -> "0:25.400"
+        if ":" in time_str and "." in time_str:
+            time_parts = time_str.split(":")
+            if len(time_parts) == 2:
+                minutes = int(time_parts[0])
+                sec_parts = time_parts[1].split(".")
+                if len(sec_parts) == 2:
+                    seconds = int(sec_parts[0])
+                    decimal = sec_parts[1].ljust(3, "0")[:3]  # Pad to 3 decimals
+                    result = f"{minutes}:{seconds:02d}.{decimal}"
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Manual format 2: '{original_time}' -> '{result}'",
+                    )
+                    return result
+
+        # Fallback
+        obs.script_log(
+            obs.LOG_WARNING,
+            f"Could not normalize lap time '{original_time}', using fallback",
+        )
+        return "0:00.000"
+
+
+def _get_closest_supported_resolution(width, height):
+    """Determine the closest supported resolution for given dimensions.
+
+    Returns tuple of (resolution_name, config_dict)
+    """
+    obs.script_log(obs.LOG_INFO, "=== RESOLUTION DETECTION DEBUG ===")
+    obs.script_log(obs.LOG_INFO, f"Input dimensions: {width}x{height}")
+    obs.script_log(
+        obs.LOG_INFO, f"Available resolutions: {list(SUPPORTED_RESOLUTIONS.keys())}"
+    )
+
+    current_aspect_ratio = width / height if height > 0 else 16 / 9
+    obs.script_log(obs.LOG_INFO, f"Input aspect ratio: {current_aspect_ratio:.3f}")
+
+    best_match = None
+    best_distance = float("inf")
+
+    for res_name, config in SUPPORTED_RESOLUTIONS.items():
+        target_aspect_ratio = config["width"] / config["height"]
+        # Calculate distance considering both size and aspect ratio
+        size_distance = abs((config["width"] * config["height"]) - (width * height))
+        aspect_distance = (
+            abs(target_aspect_ratio - current_aspect_ratio) * 1000000
+        )  # Weight aspect ratio heavily
+        total_distance = size_distance + aspect_distance
+
+        obs.script_log(
+            obs.LOG_INFO,
+            f"  {res_name}: {config['width']}x{config['height']}, aspect={target_aspect_ratio:.3f}, size_dist={size_distance}, aspect_dist={aspect_distance:.0f}, total={total_distance:.0f}",
+        )
+
+        if total_distance < best_distance:
+            best_distance = total_distance
+            best_match = (res_name, config)
+
+    obs.script_log(obs.LOG_INFO, f"SELECTED: {best_match[0]} -> {best_match[1]}")
+    obs.script_log(obs.LOG_INFO, "=== END RESOLUTION DETECTION ===")
+    return best_match
+
+
+def _resize_image_pixels(pixels, old_width, old_height, new_width, new_height):
+    """Resize image using simple nearest neighbor interpolation.
+
+    Args:
+        pixels: List of bytes rows (RGB format)
+        old_width, old_height: Original dimensions
+        new_width, new_height: Target dimensions
+
+    Returns:
+        List of bytes rows at new size
+    """
+    if old_width == new_width and old_height == new_height:
+        return pixels
+
+    try:
+        # Try fast C extension first if available
+        if lapimg is not None and hasattr(lapimg, "resize_image_rgb"):
+            # Convert pixels to contiguous bytes
+            rgb_data = b"".join(pixels)
+            resized_rgb = lapimg.resize_image_rgb(
+                rgb_data, old_width, old_height, new_width, new_height
+            )
+            # Convert back to list of row bytes
+            row_bytes = new_width * 3
+            return [
+                bytes(resized_rgb[i * row_bytes : (i + 1) * row_bytes])
+                for i in range(new_height)
+            ]
+    except Exception as e:
+        obs.script_log(
+            obs.LOG_WARNING, f"C extension resize failed: {e}, falling back to Python"
+        )
+
+    # Python fallback - simple nearest neighbor
+    new_pixels = []
+    x_ratio = old_width / new_width
+    y_ratio = old_height / new_height
+
+    for new_y in range(new_height):
+        old_y = min(int(new_y * y_ratio), old_height - 1)
+        old_row = pixels[old_y]
+        new_row = bytearray()
+
+        for new_x in range(new_width):
+            old_x = min(int(new_x * x_ratio), old_width - 1)
+            pixel_offset = old_x * 3
+            if pixel_offset + 2 < len(old_row):
+                new_row.extend(old_row[pixel_offset : pixel_offset + 3])
+            else:
+                new_row.extend([0, 0, 0])  # Black pixel fallback
+
+        new_pixels.append(bytes(new_row))
+
+    obs.script_log(
+        obs.LOG_INFO,
+        f"Resized image from {old_width}x{old_height} to {new_width}x{new_height} using Python",
+    )
+    return new_pixels
+
+
 def _validate_inputs(
     lap_time, lap_number, is_final_lap, run_number, track, coins, shrooms
 ):
@@ -826,12 +1028,24 @@ def _save_lap_to_csv(
     coins_to_save = int(coins) - int(prev_coins)
     shrooms_to_save = int(shrooms) - int(prev_shrooms)
 
+    # Normalize the lap time to ensure consistent 3-decimal formatting
+    if last_lap_time:
+        # Final lap - already properly formatted
+        time_to_save = last_lap_time
+        obs.script_log(obs.LOG_INFO, f"Saving final lap time: '{time_to_save}'")
+    else:
+        # Regular lap - normalize the input lap_time to ensure proper formatting
+        time_to_save = _normalize_laptime_format(lap_time)
+        obs.script_log(
+            obs.LOG_INFO, f"Saving regular lap time: '{lap_time}' -> '{time_to_save}'"
+        )
+
     # Build new row
     new_row = {
         "Timestamp": now_ts,
         "RunNumber": str(int(run_number)),
         "LapNumber": str(int(lap_number)),
-        "Time": last_lap_time if last_lap_time else str(lap_time),
+        "Time": time_to_save,
         "LapTimeSeconds": str(last_lap_seconds if last_lap_time else current_seconds),
         "IsFinalLap": str(bool(is_final_lap)),
         "Track": str(track),
@@ -864,6 +1078,7 @@ def _flush_queue(base_path):
             track = it.get("Track", "")
             coins = int(it.get("Coins", 0))
             shrooms = int(it.get("Shrooms", 0))
+            enable_auto_image = bool(it.get("EnableAutoImage", True))
 
             _save_lap_to_csv(
                 base_path,
@@ -876,8 +1091,8 @@ def _flush_queue(base_path):
                 shrooms,
             )
 
-            # If this is the final lap from queue, create the lap times image
-            if is_final_lap:
+            # If this is the final lap from queue, create the lap times image (if enabled)
+            if is_final_lap and enable_auto_image:
                 try:
                     _create_lap_times_image(base_path, run_number)
                 except Exception as e:
@@ -966,6 +1181,15 @@ def _get_last_final_lap(base_path):
 def _on_create_last_image_button(props, prop):
     def worker():
         try:
+            # Add debug logging
+            obs.script_log(obs.LOG_INFO, "=== CREATE LAST IMAGE DEBUG ===")
+            obs.script_log(
+                obs.LOG_INFO, f"Current SUPPORTED_RESOLUTIONS: {SUPPORTED_RESOLUTIONS}"
+            )
+            obs.script_log(
+                obs.LOG_INFO, f"Current g_lap_times_scale: {g_lap_times_scale}"
+            )
+
             last_final_lap = _get_last_final_lap(g_base_path)
             if last_final_lap is None:
                 obs.script_log(obs.LOG_WARNING, "No final lap found in CSV data")
@@ -1048,13 +1272,40 @@ def _get_lap_times_for_run(base_path, run_number):
         lap_times = []
         for lap in run_laps:
             lap_num = int(lap.get("LapNumber", 0))
-            lap_time = lap.get("Time", "")
+            lap_time_seconds = lap.get("LapTimeSeconds", "")
             is_final = str(lap.get("IsFinalLap", "")).lower() in ("true", "1")
 
-            if lap_time:
-                lap_times.append(
-                    {"lap_number": lap_num, "time": lap_time, "is_final": is_final}
-                )
+            if lap_time_seconds:
+                try:
+                    # Convert from seconds to display format for consistency
+                    seconds_val = float(lap_time_seconds)
+                    display_time = _convert_seconds_to_laptime(seconds_val)
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Using accurate seconds for lap {lap_num}: {lap_time_seconds}s -> '{display_time}'",
+                    )
+                    lap_times.append(
+                        {
+                            "lap_number": lap_num,
+                            "time": display_time,
+                            "is_final": is_final,
+                        }
+                    )
+                except (ValueError, TypeError):
+                    # Fallback to string time if seconds conversion fails
+                    lap_time_str = lap.get("Time", "")
+                    if lap_time_str:
+                        obs.script_log(
+                            obs.LOG_WARNING,
+                            f"Fallback to string time for lap {lap_num}: '{lap_time_str}'",
+                        )
+                        lap_times.append(
+                            {
+                                "lap_number": lap_num,
+                                "time": lap_time_str,
+                                "is_final": is_final,
+                            }
+                        )
 
         return lap_times, track_from_csv
 
@@ -2261,6 +2512,15 @@ def _find_screenshot_for_run(base_path, run_number):
 
 def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
     """Create lap times image using fast C extension when available, else Python."""
+    obs.script_log(obs.LOG_INFO, "=== CREATE LAP TIMES IMAGE STARTED ===")
+    obs.script_log(
+        obs.LOG_INFO,
+        f"run_number={run_number}, final_screenshot_path={final_screenshot_path}",
+    )
+    obs.script_log(
+        obs.LOG_INFO,
+        f"SUPPORTED_RESOLUTIONS keys: {list(SUPPORTED_RESOLUTIONS.keys())}",
+    )
     try:
         # Try to find and extract run number from screenshot first
         screenshot_path = final_screenshot_path
@@ -2285,6 +2545,13 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                 obs.LOG_WARNING, f"No lap times found for run {actual_run_number}"
             )
             return None
+
+        # Also get the raw run data for accurate total calculation
+        csv_path = _csv_file_path(base_path)
+        _, existing = _read_csv_data(csv_path)
+        run_laps = [
+            r for r in existing if str(r.get("RunNumber")) == str(actual_run_number)
+        ]
 
         # Load background image if available (prefer C loader on Windows)
         background_pixels, bg_width, bg_height = None, 0, 0
@@ -2319,49 +2586,109 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     f"Failed to load screenshot {os.path.basename(screenshot_path)}, using default background",
                 )
 
-        # Set image dimensions
+        # Determine target resolution and resize if needed
+        input_width = bg_width if background_pixels and bg_width > 0 else 3840
+        input_height = bg_height if background_pixels and bg_height > 0 else 2160
+
+        # Get closest supported resolution
+        target_res_name, target_res_config = _get_closest_supported_resolution(
+            input_width, input_height
+        )
+        target_width = target_res_config["width"]
+        target_height = target_res_config["height"]
+
+        # Resize background if needed
         if background_pixels and bg_width > 0 and bg_height > 0:
-            width, height = bg_width, bg_height
+            if bg_width != target_width or bg_height != target_height:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Resizing background from {bg_width}x{bg_height} to {target_width}x{target_height} ({target_res_name})",
+                )
+                background_pixels = _resize_image_pixels(
+                    background_pixels, bg_width, bg_height, target_width, target_height
+                )
+            else:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Background already at target resolution {target_width}x{target_height} ({target_res_name})",
+                )
+        else:
             obs.script_log(
                 obs.LOG_INFO,
-                f"Successfully loaded screenshot background ({width}x{height})",
+                f"Using default background at {target_width}x{target_height} ({target_res_name})",
             )
-        else:
-            # Fallback to default size with dark background
-            width, height = 3840, 2160
-            obs.script_log(obs.LOG_INFO, f"Using default background ({width}x{height})")
+
+        # Set final dimensions
+        width, height = target_width, target_height
 
         # Draw semi-transparent background for text area
         # Position text in bottom-right corner for better visibility
         # Make size and position relative to image dimensions for consistency
 
-        # Base dimensions on image size (roughly 25% of width, auto height) scaled by user setting
-        base_width = max(400, int(width * 0.25))  # At least 400px, or 25% of width
-        text_area_width = int(base_width * g_lap_times_scale)
+        # Use hardcoded resolution-specific values, optionally scaled by user preference
+        obs.script_log(obs.LOG_INFO, "=== TEXT SCALING DEBUG ===")
+        obs.script_log(obs.LOG_INFO, f"Target resolution config: {target_res_config}")
+        obs.script_log(obs.LOG_INFO, f"g_lap_times_scale: {g_lap_times_scale}")
+
+        font_size = target_res_config["font_size"]
+        char_spacing = target_res_config["char_spacing"]
+        base_padding = target_res_config["base_padding"]
+        line_spacing = target_res_config["line_spacing"]
+        margin = target_res_config["margin"]
+
         obs.script_log(
             obs.LOG_INFO,
-            f"Lap times overlay: {text_area_width}px box, {int(8 * g_lap_times_scale * 3)}px font",
+            f"Base values: font={font_size}, char_spacing={char_spacing}, padding={base_padding}, line_spacing={line_spacing}, margin={margin}",
         )
 
-        # Calculate spacing and padding relative to image size
-        base_padding = max(20, int(height * 0.02 * g_lap_times_scale))
-        line_spacing = max(25, int(height * 0.025 * g_lap_times_scale))
+        # Apply user scaling if desired (g_lap_times_scale still available for fine-tuning)
+        if g_lap_times_scale != 1.0:
+            obs.script_log(
+                obs.LOG_INFO, f"Applying user scaling factor: {g_lap_times_scale}"
+            )
+            font_size = int(font_size * g_lap_times_scale)
+            char_spacing = int(char_spacing * g_lap_times_scale)
+            base_padding = int(base_padding * g_lap_times_scale)
+            line_spacing = int(line_spacing * g_lap_times_scale)
+            margin = int(margin * g_lap_times_scale)
 
-        # Position in top-left corner with 2% margin from edges
-        margin_x = max(20, int(width * 0.02 * g_lap_times_scale))
-        margin_y = max(20, int(height * 0.02 * g_lap_times_scale))
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Final values: font={font_size}, char_spacing={char_spacing}, padding={base_padding}, line_spacing={line_spacing}, margin={margin}",
+        )
+        obs.script_log(obs.LOG_INFO, "=== END TEXT SCALING DEBUG ===")
+
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Lap times overlay ({target_res_name}): font={font_size}px, padding={base_padding}px, spacing={line_spacing}px",
+        )
+
+        # Position in top-left corner with resolution-appropriate margin
+        margin_x = margin
+        margin_y = margin
         text_x = margin_x
         text_y = margin_y
 
-        # Calculate total time
+        # Calculate total time using accurate seconds from CSV (using the same data as above)
         total_seconds = 0.0
-        for lap in lap_times:
-            try:
-                total_seconds += _convert_laptime_to_seconds(lap["time"])
-            except (ValueError, TypeError):
-                pass
+        for lap in run_laps:
+            lap_time_seconds = lap.get("LapTimeSeconds", "")
+            if lap_time_seconds:
+                try:
+                    seconds_val = float(lap_time_seconds)
+                    total_seconds += seconds_val
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Adding lap {lap.get('LapNumber', '?')} to total: {seconds_val}s",
+                    )
+                except (ValueError, TypeError):
+                    pass
 
         total_time_str = _convert_seconds_to_laptime(total_seconds)
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Total time calculated from accurate seconds: {total_seconds}s -> '{total_time_str}'",
+        )
 
         current_y = text_y + base_padding
 
@@ -2374,14 +2701,27 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             )
             # Compose whole image in C fast path (solid bg)
             texts = []
+            # Convert font_size to scale factor for C extension (C extension expects scale, not pixel size)
+            c_scale = max(
+                1, font_size // 24
+            )  # 24px is base size (8*3), so scale accordingly
+            obs.script_log(obs.LOG_INFO, "=== C EXTENSION TEXT DEBUG ===")
+            obs.script_log(
+                obs.LOG_INFO,
+                f"font_size={font_size}, c_scale={c_scale}, base_padding={base_padding}",
+            )
+            obs.script_log(
+                obs.LOG_INFO,
+                f"text_x={text_x}, current_y={current_y}, line_spacing={line_spacing}",
+            )
             texts.append(
                 (
                     text_x + base_padding,
                     current_y,
                     f"Track: {track_from_csv[:50]}",
                     (255, 255, 255),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2395,8 +2735,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                         current_y,
                         lap_text[:50],
                         color,
-                        int(g_lap_times_scale),
-                        int(8 * g_lap_times_scale),
+                        c_scale,
+                        base_padding,
                         (0, 0, 0, 220),
                     )
                 )
@@ -2408,8 +2748,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     current_y,
                     f"Total: {total_time_str}",
                     (100, 255, 100),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2440,14 +2780,27 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                 )
             # Prepare overlay texts
             texts = []
+            # Convert font_size to scale factor for C extension (C extension expects scale, not pixel size)
+            c_scale = max(
+                1, font_size // 24
+            )  # 24px is base size (8*3), so scale accordingly
+            obs.script_log(obs.LOG_INFO, "=== OVERLAY TEXT DEBUG ===")
+            obs.script_log(
+                obs.LOG_INFO,
+                f"font_size={font_size}, c_scale={c_scale}, base_padding={base_padding}",
+            )
+            obs.script_log(
+                obs.LOG_INFO,
+                f"text_x={text_x}, current_y={current_y}, line_spacing={line_spacing}",
+            )
             texts.append(
                 (
                     text_x + base_padding,
                     current_y,
                     f"Track: {track_from_csv[:50]}",
                     (255, 255, 255),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2461,8 +2814,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                         current_y,
                         lap_text[:50],
                         color,
-                        int(g_lap_times_scale),
-                        int(8 * g_lap_times_scale),
+                        c_scale,
+                        base_padding,
                         (0, 0, 0, 220),
                     )
                 )
@@ -2474,8 +2827,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     current_y,
                     f"Total: {total_time_str}",
                     (100, 255, 100),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2501,26 +2854,37 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     pixels = background_pixels
                 else:
                     pixels = _create_png_image(width, height, bg_color=(30, 30, 30))
-                # Draw using Python
+                # Draw using Python - convert from C extension format to Python format
+                obs.script_log(obs.LOG_INFO, "=== PYTHON FALLBACK TEXT DEBUG ===")
+                obs.script_log(
+                    obs.LOG_INFO, f"font_size={font_size}, texts count={len(texts)}"
+                )
                 for entry in texts:
+                    # entry format: (x, y, text, color, scale, padding, bg_color)
+                    # _draw_text_with_background expects: (pixels, width, height, x, y, text, text_color, bg_color, scale, padding)
+                    python_scale = (
+                        font_size / 24.0
+                    )  # Convert pixel size back to scale for Python renderer
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"  Drawing text: '{entry[2]}' at ({entry[0]}, {entry[1]}) with python_scale={python_scale:.2f}",
+                    )
                     _draw_text_with_background(
                         pixels,
                         width,
                         height,
-                        entry[0],
-                        entry[1],
-                        entry[2],
-                        entry[3],
-                        entry[6],
-                        entry[4],
-                        entry[5],
+                        entry[0],  # x
+                        entry[1],  # y
+                        entry[2],  # text
+                        entry[3],  # text_color
+                        entry[6],  # bg_color (RGBA)
+                        python_scale,  # scale
+                        entry[5],  # padding
                     )
 
         # Generate output filename
         safe_track = make_filesystem_safe(track_from_csv)
-        output_filename = (
-            f"Splits_{safe_track}_Run-{actual_run_number}.png"
-        )
+        output_filename = f"Splits_{safe_track}_Run-{actual_run_number}.png"
         output_path = os.path.join(base_path, output_filename)
 
         # Save the image (prefer fast C saver)
@@ -2649,6 +3013,9 @@ def get_save_action_properties():
         props, "shrooms_var", "Shrooms Variable Name", obs.OBS_TEXT_DEFAULT
     )
     obs.obs_properties_add_bool(props, "is_final_lap", "Is Final Lap")
+    obs.obs_properties_add_bool(
+        props, "enable_auto_image", "Create Split Image after Final Lap"
+    )
     return props
 
 
@@ -2661,6 +3028,7 @@ def get_save_action_defaults():
     obs.obs_data_set_default_string(defaults, "coins_var", "CurrentCoins")
     obs.obs_data_set_default_string(defaults, "shrooms_var", "UsedShrooms")
     obs.obs_data_set_default_bool(defaults, "is_final_lap", False)
+    obs.obs_data_set_default_bool(defaults, "enable_auto_image", True)
     return defaults
 
 
@@ -2674,6 +3042,7 @@ def run_action_save_lap(data, instance_id):
         coins_var = obs.obs_data_get_string(data, "coins_var")
         shrooms_var = obs.obs_data_get_string(data, "shrooms_var")
         is_final_lap = obs.obs_data_get_bool(data, "is_final_lap")
+        enable_auto_image = obs.obs_data_get_bool(data, "enable_auto_image")
 
         # Get values from variables
         lap_time = advss_get_variable_value(lap_time_var)
@@ -2718,17 +3087,24 @@ def run_action_save_lap(data, instance_id):
         csv_path = _csv_file_path(g_base_path)
         if os.path.exists(csv_path) and _test_csv_locked(csv_path):
             obs.script_log(obs.LOG_INFO, "CSV is locked; queueing submission")
+            # Normalize lap time before queueing
+            normalized_lap_time = _normalize_laptime_format(lap_time)
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Queueing lap time: '{lap_time}' -> '{normalized_lap_time}'",
+            )
             _add_to_queue(
                 g_base_path,
                 {
                     "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "LapTime": lap_time,
+                    "LapTime": normalized_lap_time,
                     "LapNumber": int(lap_number),
                     "IsFinalLap": bool(is_final_lap),
                     "RunNumber": int(run_number),
                     "Track": track,
                     "Coins": int(coins),
                     "Shrooms": int(shrooms),
+                    "EnableAutoImage": bool(enable_auto_image),
                 },
             )
             return True
@@ -2748,8 +3124,8 @@ def run_action_save_lap(data, instance_id):
             shrooms,
         )
 
-        # If this is the final lap, create the lap times image
-        if is_final_lap:
+        # If this is the final lap, create the lap times image (if enabled)
+        if is_final_lap and enable_auto_image:
             try:
                 _create_lap_times_image(g_base_path, run_number)
             except Exception as e:
@@ -2762,17 +3138,24 @@ def run_action_save_lap(data, instance_id):
         # Fallback to queue if CSV write fails
         obs.script_log(obs.LOG_WARNING, f"Saving to CSV failed, queueing instead: {e}")
         try:
+            # Normalize lap time before queueing in fallback case too
+            normalized_lap_time = _normalize_laptime_format(lap_time)
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Fallback queueing lap time: '{lap_time}' -> '{normalized_lap_time}'",
+            )
             _add_to_queue(
                 g_base_path,
                 {
                     "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "LapTime": lap_time,
+                    "LapTime": normalized_lap_time,
                     "LapNumber": lap_number,
                     "IsFinalLap": is_final_lap,
                     "RunNumber": run_number,
                     "Track": track,
                     "Coins": coins,
                     "Shrooms": shrooms,
+                    "EnableAutoImage": enable_auto_image,
                 },
             )
         except Exception as e2:
