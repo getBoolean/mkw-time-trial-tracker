@@ -36,39 +36,38 @@ Before setting up this script, ensure you have:
 
 ## Installation
 
-### Step 1: Clone the Repository
+### Step 1: Download from Releases (recommended)
 
-First, clone this repository to your local machine:
+1. Go to the [Latest Release](https://github.com/getBoolean/mk-time-trial-tracker/releases/latest) and download the latest platform bundle for your OS.
+   - Names look like: `bundle-windows-latest-py310.zip`, `bundle-ubuntu-latest-py310.zip`, `bundle-macos-latest-py310.zip`.
+2. Extract the ZIP to your desired location (e.g., `C:\dev\mk-time-trial-tracker` or `~/mk-time-trial-tracker`).
+
+Alternative: clone the repository
 
 ```bash
 git clone https://github.com/getBoolean/mk-time-trial-tracker
 cd mk-time-trial-tracker
 ```
 
-Or download the repository as a ZIP file:
+If you cloned the repo, you need to build the compiled C extension for faster image generation:
 
-1. Click the green **Code** button on the GitHub repository page
-2. Select **Download ZIP**
-3. Extract the ZIP file to your desired location
+Windows:
 
-### Step 2: Install Advanced Scene Switcher
+```powershell
+py -m pip install --upgrade pip build
+py -m build --wheel
+py -m pip install dist\*.whl
+```
 
-1. Download the Advanced Scene Switcher plugin from the [official repository](https://github.com/WarmUpTill/SceneSwitcher)
-2. Install the plugin following the instructions in the repository
-3. Restart OBS Studio after installation
+macOS/Linux:
 
-### Step 3: Add the Script
+```bash
+python3 -m pip install --upgrade pip build
+python3 -m build --wheel
+python3 -m pip install dist/*.whl
+```
 
-1. Open OBS Studio
-2. Go to **Tools** → **Scripts**
-3. Click the **+** button to add a new script
-4. Navigate to the cloned repository folder and select `TimeTrialTracker.py`
-5. Click **OK** to load the script
-6. Configure the script properties:
-   - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
-   - **Script Repo Path**: Path to this repository (optional, for future features)
-
-### Prefer prebuilt release (no build needed)
+### Step 2: Prefer prebuilt release (no build needed)
 
 To avoid building the optional C extension locally, use the prebuilt release bundle for your OS:
 
@@ -99,25 +98,22 @@ Notes:
 - The wheel is built for Python 3.10 (`cp310`). If you skip installing it, the script will fall back to pure Python (slower) automatically.
 - You can still update macros/config exactly the same as when cloning the repo.
 
-### Optional: Build fast C module (Windows/macOS/Linux)
+### Step 3: Install Advanced Scene Switcher
 
-To speed up lap times image generation, build the optional C extension. It is cross-platform and works on Windows, macOS, and Linux.
+1. Download the Advanced Scene Switcher plugin from the [official repository](https://github.com/WarmUpTill/SceneSwitcher)
+2. Install the plugin following the instructions in the repository
+3. Restart OBS Studio after installation
 
-Windows (PowerShell):
+### Step 4: Add the Script
 
-```bash
-py -m pip install --upgrade pip setuptools wheel
-py setup.py build_ext --inplace
-```
-
-macOS/Linux:
-
-```bash
-python3 -m pip install --upgrade pip setuptools wheel
-python3 setup.py build_ext --inplace
-```
-
-If building fails, the script automatically falls back to the pure-Python implementation.
+1. Open OBS Studio
+2. Go to **Tools** → **Scripts**
+3. Click the **+** button to add a new script
+4. Navigate to the extracted folder (or cloned repo) and select `TimeTrialTracker.py`
+5. Click **OK** to load the script
+6. Configure the script properties:
+   - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
+   - **Script Repo Path**: Path to this repository (optional, for future features)
 
 ## Usage
 
@@ -174,6 +170,10 @@ Manually generates a composite image showing all lap times for a specific run ov
 - Shows individual lap times and total time
 - Outputs file named `LapTimes_[Track]_Run[X]_[timestamp].png`
 - Automatically triggered when final lap is saved with "Is Final Lap" checked
+
+**Example output:**
+
+![Lap Times Image](docs/LapTimes_image.png)
 
 ### Quick start: import provided macros (recommended)
 
