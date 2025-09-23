@@ -13,6 +13,9 @@ action_name = "MKW Track"
 # New action for saving lap times
 save_action_name = "MKW Save Lap"
 
+# New action for moving old images
+move_images_action_name = "MKW Move Old Images"
+
 # Script-level settings (updated via script_update)
 g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
 g_repo_path = ""
@@ -297,12 +300,21 @@ def script_load(settings):
         get_save_action_defaults(),
         None,
     )
+    # Register Move Old Images action
+    advss_register_action(
+        move_images_action_name,
+        run_action_move_images,
+        get_move_images_action_properties,
+        get_move_images_action_defaults(),
+        None,
+    )
 
 
 def script_unload():
     global action_name
     advss_deregister_action(action_name)
     advss_deregister_action(save_action_name)
+    advss_deregister_action(move_images_action_name)
 
 
 ###############################################################################
@@ -858,6 +870,71 @@ def _on_process_queue_button(props, prop):
 
 
 ###############################################################################
+# Move Old Images functionality
+###############################################################################
+
+
+def _move_old_images(base_path, pattern="Lap-*.png", destination_subfolder="lap times"):
+    """Move old image files matching pattern to a subfolder"""
+    import glob
+
+    if not os.path.exists(base_path):
+        obs.script_log(obs.LOG_WARNING, f"Base path does not exist: {base_path}")
+        return False
+
+    # Create destination folder
+    dest_folder = os.path.join(base_path, destination_subfolder)
+    try:
+        os.makedirs(dest_folder, exist_ok=True)
+        obs.script_log(obs.LOG_INFO, f"Ensured directory exists: {dest_folder}")
+    except Exception as e:
+        obs.script_log(
+            obs.LOG_WARNING, f"Failed to create directory {dest_folder}: {e}"
+        )
+        return False
+
+    # Find files matching pattern
+    search_pattern = os.path.join(base_path, pattern)
+    files_to_move = glob.glob(search_pattern)
+
+    if not files_to_move:
+        obs.script_log(obs.LOG_INFO, f"No files found matching pattern: {pattern}")
+        return True
+
+    moved_count = 0
+    failed_count = 0
+
+    for file_path in files_to_move:
+        try:
+            filename = os.path.basename(file_path)
+            dest_path = os.path.join(dest_folder, filename)
+
+            # Move the file
+            if os.path.exists(dest_path):
+                # If destination exists, try to remove it first
+                try:
+                    os.remove(dest_path)
+                except Exception:
+                    pass
+
+            os.rename(file_path, dest_path)
+            obs.script_log(obs.LOG_INFO, f"Moved {filename} to {destination_subfolder}")
+            moved_count += 1
+
+        except Exception as e:
+            obs.script_log(
+                obs.LOG_WARNING, f"Failed to move {os.path.basename(file_path)}: {e}"
+            )
+            failed_count += 1
+
+    obs.script_log(
+        obs.LOG_INFO,
+        f"Move operation complete: {moved_count} moved, {failed_count} failed",
+    )
+    return failed_count == 0
+
+
+###############################################################################
 # Save Lap Time action definitions
 ###############################################################################
 
@@ -1001,4 +1078,46 @@ def run_action_save_lap(data, instance_id):
             )
         except Exception as e2:
             obs.script_log(obs.LOG_WARNING, f"Failed to queue submission: {e2}")
+        return False
+
+
+###############################################################################
+# Move Old Images action definitions
+###############################################################################
+
+
+def get_move_images_action_properties():
+    props = obs.obs_properties_create()
+    obs.obs_properties_add_text(
+        props, "file_pattern", "File Pattern", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props, "destination_folder", "Destination Subfolder", obs.OBS_TEXT_DEFAULT
+    )
+    return props
+
+
+def get_move_images_action_defaults():
+    defaults = obs.obs_data_create()
+    obs.obs_data_set_default_string(defaults, "file_pattern", "Lap-*.png")
+    obs.obs_data_set_default_string(defaults, "destination_folder", "lap times")
+    return defaults
+
+
+def run_action_move_images(data, instance_id):
+    try:
+        file_pattern = obs.obs_data_get_string(data, "file_pattern").strip()
+        destination_folder = obs.obs_data_get_string(data, "destination_folder").strip()
+
+        # Use defaults if empty
+        if not file_pattern:
+            file_pattern = "Lap-*.png"
+        if not destination_folder:
+            destination_folder = "lap times"
+
+        success = _move_old_images(g_base_path, file_pattern, destination_folder)
+        return success
+
+    except Exception as e:
+        obs.script_log(obs.LOG_WARNING, f"Move images action failed: {e}")
         return False
