@@ -22,10 +22,9 @@ A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plu
 - **Lap Time Recording**: Save lap times to CSV with automatic calculations
 - **Lap Splits Image Generation**: Automatically create composite images showing all lap times overlaid on final screenshots
 - **Fuzzy Matching**: Uses intelligent matching to handle OCR errors and variations
-- **Cross-Platform**: Pure Python implementation works on Windows, macOS, and Linux
-- **Queue System**: Automatic queuing when CSV files are locked, with manual processing option
-- **Advanced Scene Switcher Integration**: Works seamlessly with OBS macros and scene switching
-- **Variable-Based Inputs**: Use OCR variables, counters, or any Advanced Scene Switcher variable as input
+- **Cross-Platform**: Pure Python implementation works on Windows, macOS, and Linux (Currently only Windows is tested)
+- **Queue System**: Automatic queuing when CSV files are locked, and an option to manually process the queue
+- **Variable-Based Inputs**: Use Advanced Scene Switcher variables as inputs for the macro actions
 
 ## Prerequisites
 
