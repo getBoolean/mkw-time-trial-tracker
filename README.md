@@ -35,18 +35,33 @@ Before setting up this script, ensure you have:
 
 ## Installation
 
-### Step 1: Install Advanced Scene Switcher
+### Step 1: Clone the Repository
+
+First, clone this repository to your local machine:
+
+```bash
+git clone https://github.com/getBoolean/mk-time-trial-tracker
+cd mk-time-trial-tracker
+```
+
+Or download the repository as a ZIP file:
+
+1. Click the green **Code** button on the GitHub repository page
+2. Select **Download ZIP**
+3. Extract the ZIP file to your desired location
+
+### Step 2: Install Advanced Scene Switcher
 
 1. Download the Advanced Scene Switcher plugin from the [official repository](https://github.com/WarmUpTill/SceneSwitcher)
 2. Install the plugin following the instructions in the repository
 3. Restart OBS Studio after installation
 
-### Step 2: Add the Script
+### Step 3: Add the Script
 
 1. Open OBS Studio
 2. Go to **Tools** → **Scripts**
 3. Click the **+** button to add a new script
-4. Navigate to and select `TimeTrialTracker.py`
+4. Navigate to the cloned repository folder and select `TimeTrialTracker.py`
 5. Click **OK** to load the script
 6. Configure the script properties:
    - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
