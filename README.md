@@ -345,24 +345,6 @@ Lap times are saved to `lap_times.csv` in your configured base path with these c
 - **Coins**: Coins collected this lap (calculated as difference from previous laps)
 - **Shrooms**: Mushrooms used this lap (calculated as difference from previous laps)
 
-#### Lap Times Images
-
-The system automatically generates PNG images showing lap time summaries when a final lap is saved:
-
-- **Automatic Generation**: Triggered when saving a lap with "Is Final Lap" checked
-- **Manual Generation**: Use the "MKW Generate Lap Times Image" action to create images from existing data
-- **Background**: Detects the most recent screenshot and logs its availability (screenshot background loading temporarily disabled due to PNG format complexity)
-- **File Format**: Images saved as `LapTimes_[Track]_Run[X]_[timestamp].png`
-- **Content**: Clean image with:
-  - Dark background (800x600)
-  - Track name at the top
-  - Individual lap times (final lap highlighted in yellow)
-  - Total race time at the bottom
-  - Black background for optimal text readability
-- **Pure Python**: Uses only core Python libraries (no external dependencies required)
-- **Enhanced Font**: Complete 8x8 bitmap font supporting all letters, numbers, and common symbols
-- **Script Button**: "Create Image for Last Final Lap" button in script properties for manual generation
-
 #### Using Variables
 
 The script exposes macro properties (temporary variables) that can be used in other actions:
