@@ -68,6 +68,17 @@ Or download the repository as a ZIP file:
    - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
    - **Script Repo Path**: Path to this repository (optional, for future features)
 
+### Optional: Build fast C module (Windows)
+
+To speed up lap times image generation, build the optional C extension:
+
+```bash
+py -m pip install --upgrade pip setuptools wheel
+py setup.py build_ext --inplace
+```
+
+If building fails, the script automatically falls back to the pure-Python implementation.
+
 ## Usage
 
 ### Available Actions

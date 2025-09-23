@@ -28,6 +28,12 @@ g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
 g_repo_path = ""
 g_lap_times_scale = 3.0  # Fixed scale factor for lap times box size
 
+# Optional fast C extension
+try:
+    import lapimg  # type: ignore
+except Exception:
+    lapimg = None
+
 
 ###############################################################################
 # Macro action functions
@@ -2254,7 +2260,7 @@ def _find_screenshot_for_run(base_path, run_number):
 
 
 def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
-    """Create a simple image with lap times using pure Python"""
+    """Create lap times image using fast C extension when available, else Python."""
     try:
         # Try to find and extract run number from screenshot first
         screenshot_path = final_screenshot_path
@@ -2280,15 +2286,33 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             )
             return None
 
-        # Load background image if available
+        # Load background image if available (prefer C loader on Windows)
         background_pixels, bg_width, bg_height = None, 0, 0
         if screenshot_path and os.path.exists(screenshot_path):
             obs.script_log(
                 obs.LOG_INFO,
                 f"Loading screenshot background: {os.path.basename(screenshot_path)}",
             )
-            background_pixels, bg_width, bg_height = _read_png_file(screenshot_path)
-
+            used_loader = "python"
+            if lapimg is not None and hasattr(lapimg, "load_image_rgb"):
+                try:
+                    rgb, w, h = lapimg.load_image_rgb(screenshot_path)
+                    row_bytes = w * 3
+                    background_pixels = [
+                        bytes(rgb[i * row_bytes : (i + 1) * row_bytes])
+                        for i in range(h)
+                    ]
+                    bg_width, bg_height = w, h
+                    used_loader = "c-gdiplus"
+                except Exception as e:
+                    obs.script_log(
+                        obs.LOG_WARNING,
+                        f"Fast PNG loader failed ({e}); falling back to Python",
+                    )
+            if background_pixels is None:
+                background_pixels, bg_width, bg_height = _read_png_file(screenshot_path)
+                used_loader = "python"
+            obs.script_log(obs.LOG_INFO, f"Background loader used: {used_loader}")
             if background_pixels is None:
                 obs.script_log(
                     obs.LOG_WARNING,
@@ -2298,7 +2322,6 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
         # Set image dimensions
         if background_pixels and bg_width > 0 and bg_height > 0:
             width, height = bg_width, bg_height
-            pixels = background_pixels
             obs.script_log(
                 obs.LOG_INFO,
                 f"Successfully loaded screenshot background ({width}x{height})",
@@ -2306,7 +2329,6 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
         else:
             # Fallback to default size with dark background
             width, height = 3840, 2160
-            pixels = _create_png_image(width, height, bg_color=(30, 30, 30))
             obs.script_log(obs.LOG_INFO, f"Using default background ({width}x{height})")
 
         # Draw semi-transparent background for text area
@@ -2342,49 +2364,157 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
         total_time_str = _convert_seconds_to_laptime(total_seconds)
 
         current_y = text_y + base_padding
-        _draw_text_with_background(
-            pixels,
-            width,
-            height,
-            text_x + base_padding,
-            current_y,
-            f"Track: {track_from_csv[:50]}",
-            (255, 255, 255),
-            (0, 0, 0, 220),
-            g_lap_times_scale,
-            int(8 * g_lap_times_scale),
-        )
-        current_y += line_spacing * 2
-        for lap in lap_times:
-            lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
-            color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
-            _draw_text_with_background(
-                pixels,
-                width,
-                height,
-                text_x + base_padding,
-                current_y,
-                lap_text[:50],
-                color,
-                (0, 0, 0, 220),
-                g_lap_times_scale,
-                int(8 * g_lap_times_scale),
-            )
-            current_y += line_spacing
 
-        current_y += line_spacing
-        _draw_text_with_background(
-            pixels,
-            width,
-            height,
-            text_x + base_padding,
-            current_y,
-            f"Total: {total_time_str}",
-            (100, 255, 100),
-            (0, 0, 0, 220),
-            g_lap_times_scale,
-            int(8 * g_lap_times_scale),
-        )
+        use_fast = lapimg is not None
+
+        if use_fast and not (background_pixels and bg_width > 0 and bg_height > 0):
+            obs.script_log(
+                obs.LOG_INFO,
+                "Lap times image: using fast C implementation (solid background)",
+            )
+            # Compose whole image in C fast path (solid bg)
+            texts = []
+            texts.append(
+                (
+                    text_x + base_padding,
+                    current_y,
+                    f"Track: {track_from_csv[:50]}",
+                    (255, 255, 255),
+                    int(g_lap_times_scale),
+                    int(8 * g_lap_times_scale),
+                    (0, 0, 0, 220),
+                )
+            )
+            current_y += line_spacing * 2
+            for lap in lap_times:
+                lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
+                color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
+                texts.append(
+                    (
+                        text_x + base_padding,
+                        current_y,
+                        lap_text[:50],
+                        color,
+                        int(g_lap_times_scale),
+                        int(8 * g_lap_times_scale),
+                        (0, 0, 0, 220),
+                    )
+                )
+                current_y += line_spacing
+            current_y += line_spacing
+            texts.append(
+                (
+                    text_x + base_padding,
+                    current_y,
+                    f"Total: {total_time_str}",
+                    (100, 255, 100),
+                    int(g_lap_times_scale),
+                    int(8 * g_lap_times_scale),
+                    (0, 0, 0, 220),
+                )
+            )
+
+            # Call C extension to compose RGB buffer
+            rgb = lapimg.compose_lap_image(
+                width=width,
+                height=height,
+                bg_rgb=(30, 30, 30),
+                texts=texts,
+            )
+            # Convert to pixels list[bytes] rows
+            row_bytes = width * 3
+            pixels = [
+                bytes(rgb[i * row_bytes : (i + 1) * row_bytes]) for i in range(height)
+            ]
+        else:
+            # Fallback or background present
+            if lapimg is None:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    "Lap times image: using Python implementation (C extension not available)",
+                )
+            elif background_pixels and bg_width > 0 and bg_height > 0:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    "Lap times image: using fast C overlay on screenshot",
+                )
+            # Prepare overlay texts
+            texts = []
+            texts.append(
+                (
+                    text_x + base_padding,
+                    current_y,
+                    f"Track: {track_from_csv[:50]}",
+                    (255, 255, 255),
+                    int(g_lap_times_scale),
+                    int(8 * g_lap_times_scale),
+                    (0, 0, 0, 220),
+                )
+            )
+            current_y += line_spacing * 2
+            for lap in lap_times:
+                lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
+                color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
+                texts.append(
+                    (
+                        text_x + base_padding,
+                        current_y,
+                        lap_text[:50],
+                        color,
+                        int(g_lap_times_scale),
+                        int(8 * g_lap_times_scale),
+                        (0, 0, 0, 220),
+                    )
+                )
+                current_y += line_spacing
+            current_y += line_spacing
+            texts.append(
+                (
+                    text_x + base_padding,
+                    current_y,
+                    f"Total: {total_time_str}",
+                    (100, 255, 100),
+                    int(g_lap_times_scale),
+                    int(8 * g_lap_times_scale),
+                    (0, 0, 0, 220),
+                )
+            )
+
+            if (
+                background_pixels
+                and bg_width > 0
+                and bg_height > 0
+                and lapimg is not None
+                and hasattr(lapimg, "draw_overlay_on_rgb")
+            ):
+                # Convert pixels list[bytes] to contiguous bytes
+                rgb = b"".join(background_pixels)
+                rgb2 = lapimg.draw_overlay_on_rgb(rgb, width, height, texts)
+                row_bytes = width * 3
+                pixels = [
+                    bytes(rgb2[i * row_bytes : (i + 1) * row_bytes])
+                    for i in range(height)
+                ]
+            else:
+                # Python fallback
+                if background_pixels and bg_width > 0 and bg_height > 0:
+                    pixels = background_pixels
+                else:
+                    pixels = _create_png_image(width, height, bg_color=(30, 30, 30))
+                # Draw using Python
+                for entry in texts:
+                    _draw_text_with_background(
+                        pixels,
+                        width,
+                        height,
+                        entry[0],
+                        entry[1],
+                        entry[2],
+                        entry[3],
+                        entry[6],
+                        entry[4],
+                        entry[5],
+                    )
 
         # Generate output filename
         safe_track = make_filesystem_safe(track_from_csv)
@@ -2394,9 +2524,33 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
         )
         output_path = os.path.join(base_path, output_filename)
 
-        # Save the image
-        _save_png_file(pixels, width, height, output_path)
-        obs.script_log(obs.LOG_INFO, f"Created lap times image: {output_filename}")
+        # Save the image (prefer fast C saver)
+        try:
+            if lapimg is not None and hasattr(lapimg, "save_png"):
+                rgb = b"".join(pixels)
+                if lapimg.save_png(output_path, rgb, width, height):
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Created lap times image (C saver): {output_filename}",
+                    )
+                else:
+                    _save_png_file(pixels, width, height, output_path)
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Created lap times image (Python saver): {output_filename}",
+                    )
+            else:
+                _save_png_file(pixels, width, height, output_path)
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Created lap times image (Python saver): {output_filename}",
+                )
+        except Exception:
+            _save_png_file(pixels, width, height, output_path)
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Created lap times image (Python saver fallback): {output_filename}",
+            )
 
         return output_path
 
