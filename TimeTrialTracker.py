@@ -18,7 +18,7 @@ move_images_action_name = "MKW Move Old Images"
 
 # Script-level settings (updated via script_update)
 g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
-g_repo_path = ""
+g_repo_path_var = "Script Repo Path"
 
 
 ###############################################################################
@@ -47,6 +47,11 @@ def run_action(data, instance_id):
     advss_set_temp_var_value(
         "identified_track_safe", make_filesystem_safe(identified_track), instance_id
     )
+
+    # Also set the repo path from the configured variable
+    repo_path = advss_get_variable_value(g_repo_path_var)
+    if repo_path:
+        advss_set_temp_var_value("script_repo_path", repo_path, instance_id)
 
 
 def find_closest_track(ocr_text):
@@ -224,6 +229,11 @@ def get_action_macro_properties():
             "Identified Track (Filename Safe)",
             "File path safe version of Identified Track",
         ),
+        MacroProperty(
+            "script_repo_path",
+            "Script Repo Path",
+            "Path to the script repository from configured variable",
+        ),
     ]
 
 
@@ -233,7 +243,7 @@ def get_action_macro_properties():
 
 
 def script_description():
-    return f'Adds the macro action "{action_name}" for the advanced scene switcher'
+    return f'Adds the macro action "{action_name}" for the advanced scene switcher.\n\nConfigure the "Script Repo Path Variable Name" to specify which Advanced Scene Switcher variable contains your script repository path. Other macros can then reference this variable to access the repo path.'
 
 
 def script_properties():
@@ -246,13 +256,17 @@ def script_properties():
         None,
         None,
     )
-    obs.obs_properties_add_path(
+    obs.obs_properties_add_text(
         props,
-        "repo_path",
-        "Script Repo Path",
-        obs.OBS_PATH_DIRECTORY,
-        None,
-        None,
+        "repo_path_var",
+        "Script Repo Path Variable Name",
+        obs.OBS_TEXT_DEFAULT,
+    )
+    obs.obs_properties_add_text(
+        props,
+        "repo_path_info",
+        "ℹ️ Script Repo Path Info",
+        obs.OBS_TEXT_INFO,
     )
     obs.obs_properties_add_button(
         props,
@@ -265,17 +279,25 @@ def script_properties():
 
 def script_defaults(settings):
     obs.obs_data_set_default_string(settings, "base_path", g_base_path)
-    obs.obs_data_set_default_string(settings, "repo_path", g_repo_path)
+    obs.obs_data_set_default_string(settings, "repo_path_var", g_repo_path_var)
+    obs.obs_data_set_default_string(
+        settings,
+        "repo_path_info",
+        "Specify the name of an existing Advanced Scene Switcher variable that contains the script repository path. This variable will be read by macros that need access to the repo path.",
+    )
 
 
 def script_update(settings):
-    global g_base_path, g_repo_path
+    global g_base_path, g_repo_path_var
     base_path_val = obs.obs_data_get_string(settings, "base_path")
-    repo_path_val = obs.obs_data_get_string(settings, "repo_path")
+    repo_path_var_val = obs.obs_data_get_string(settings, "repo_path_var")
     if base_path_val:
         g_base_path = base_path_val
-    if repo_path_val:
-        g_repo_path = repo_path_val
+    if repo_path_var_val:
+        g_repo_path_var = repo_path_var_val
+        obs.script_log(
+            obs.LOG_INFO, f"Script repo path variable set to: '{repo_path_var_val}'"
+        )
 
 
 ###############################################################################
