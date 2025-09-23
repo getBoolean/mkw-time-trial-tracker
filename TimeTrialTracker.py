@@ -26,6 +26,7 @@ generate_image_action_name = "MKW Generate Lap Times Image"
 # Script-level settings (updated via script_update)
 g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
 g_repo_path = ""
+g_lap_times_scale = 1.0  # Scale factor for lap times box size
 
 
 ###############################################################################
@@ -261,6 +262,14 @@ def script_properties():
         None,
         None,
     )
+    obs.obs_properties_add_float_slider(
+        props,
+        "lap_times_scale",
+        "Lap Times Box Scale",
+        0.5,  # Minimum: 0.5x (50%)
+        5.0,  # Maximum: 5.0x (500%)
+        0.1,  # Step: 0.1
+    )
     obs.obs_properties_add_button(
         props,
         "process_queue_btn",
@@ -279,16 +288,20 @@ def script_properties():
 def script_defaults(settings):
     obs.obs_data_set_default_string(settings, "base_path", g_base_path)
     obs.obs_data_set_default_string(settings, "repo_path", g_repo_path)
+    obs.obs_data_set_default_double(settings, "lap_times_scale", g_lap_times_scale)
 
 
 def script_update(settings):
-    global g_base_path, g_repo_path
+    global g_base_path, g_repo_path, g_lap_times_scale
     base_path_val = obs.obs_data_get_string(settings, "base_path")
     repo_path_val = obs.obs_data_get_string(settings, "repo_path")
+    scale_val = obs.obs_data_get_double(settings, "lap_times_scale")
     if base_path_val:
         g_base_path = base_path_val
     if repo_path_val:
         g_repo_path = repo_path_val
+    if scale_val > 0:
+        g_lap_times_scale = scale_val
 
 
 ###############################################################################
@@ -1026,6 +1039,7 @@ def _read_png_file(filename):
             # Check PNG signature
             signature = f.read(8)
             if signature != b"\x89PNG\r\n\x1a\n":
+                obs.script_log(obs.LOG_WARNING, f"Invalid PNG signature in {filename}")
                 return None, 0, 0
 
             width = height = bit_depth = color_type = 0
@@ -1058,102 +1072,138 @@ def _read_png_file(filename):
                         width, height, bit_depth, color_type = struct.unpack(
                             ">IIBB", chunk_data[:10]
                         )
+                        obs.script_log(
+                            obs.LOG_INFO,
+                            f"PNG: {width}x{height}, {bit_depth}bit, type {color_type}",
+                        )
                 elif chunk_type == b"IDAT":
                     image_data += chunk_data
                 elif chunk_type == b"IEND":
                     break
 
             if not image_data or width == 0 or height == 0:
+                obs.script_log(obs.LOG_WARNING, f"No image data found in {filename}")
                 return None, 0, 0
 
             # Decompress image data
             try:
                 decompressed = zlib.decompress(image_data)
-            except zlib.error:
+                obs.script_log(obs.LOG_INFO, f"Decompressed {len(decompressed)} bytes")
+            except zlib.error as e:
+                obs.script_log(obs.LOG_WARNING, f"Failed to decompress PNG data: {e}")
                 return None, 0, 0
 
             # Determine bytes per pixel based on color type
             if color_type == 0:  # Grayscale
-                bytes_per_pixel = bit_depth // 8 if bit_depth >= 8 else 1
+                channels = 1
             elif color_type == 2:  # RGB
-                bytes_per_pixel = (bit_depth * 3) // 8
-            elif color_type == 3:  # Palette
-                bytes_per_pixel = bit_depth // 8 if bit_depth >= 8 else 1
+                channels = 3
+            elif color_type == 3:  # Palette - not supported
+                obs.script_log(obs.LOG_WARNING, "Palette PNG not supported")
+                return None, 0, 0
             elif color_type == 4:  # Grayscale + Alpha
-                bytes_per_pixel = (bit_depth * 2) // 8
+                channels = 2
             elif color_type == 6:  # RGBA
-                bytes_per_pixel = (bit_depth * 4) // 8
+                channels = 4
             else:
-                # Unsupported format
+                obs.script_log(obs.LOG_WARNING, f"Unsupported color type: {color_type}")
                 return None, 0, 0
 
-            # Calculate bytes per row
-            bytes_per_row = width * bytes_per_pixel + 1  # +1 for filter byte
+            bytes_per_pixel = (
+                channels * (bit_depth // 8) if bit_depth >= 8 else channels
+            )
+            scanline_length = width * bytes_per_pixel
 
-            # Convert to RGB pixel format
+            # Process each scanline (row)
             pixels = []
+            prev_row = [0] * scanline_length
+
             for y in range(height):
-                row_start = y * bytes_per_row
-                if row_start + bytes_per_row > len(decompressed):
+                # Each scanline starts with a filter byte
+                scanline_start = y * (scanline_length + 1)
+                if scanline_start + scanline_length + 1 > len(decompressed):
+                    obs.script_log(obs.LOG_WARNING, f"Incomplete scanline at row {y}")
                     return None, 0, 0
 
-                row_data = decompressed[row_start : row_start + bytes_per_row]
-                filter_byte = row_data[0]
-                pixel_data = row_data[1:]
+                filter_type = decompressed[scanline_start]
+                scanline = list(
+                    decompressed[
+                        scanline_start + 1 : scanline_start + scanline_length + 1
+                    ]
+                )
 
-                # Apply PNG filters (simplified - only handle filter type 0)
-                if filter_byte != 0:
-                    # For now, only support unfiltered data
+                # Apply PNG filter
+                if filter_type == 0:  # None
+                    pass
+                elif filter_type == 1:  # Sub
+                    for i in range(bytes_per_pixel, len(scanline)):
+                        scanline[i] = (
+                            scanline[i] + scanline[i - bytes_per_pixel]
+                        ) & 0xFF
+                elif filter_type == 2:  # Up
+                    for i in range(len(scanline)):
+                        scanline[i] = (scanline[i] + prev_row[i]) & 0xFF
+                elif filter_type == 3:  # Average
+                    for i in range(len(scanline)):
+                        left = (
+                            scanline[i - bytes_per_pixel] if i >= bytes_per_pixel else 0
+                        )
+                        up = prev_row[i]
+                        scanline[i] = (scanline[i] + ((left + up) // 2)) & 0xFF
+                elif filter_type == 4:  # Paeth
+                    for i in range(len(scanline)):
+                        left = (
+                            scanline[i - bytes_per_pixel] if i >= bytes_per_pixel else 0
+                        )
+                        up = prev_row[i]
+                        up_left = (
+                            prev_row[i - bytes_per_pixel] if i >= bytes_per_pixel else 0
+                        )
+
+                        # Paeth predictor
+                        p = left + up - up_left
+                        pa = abs(p - left)
+                        pb = abs(p - up)
+                        pc = abs(p - up_left)
+
+                        if pa <= pb and pa <= pc:
+                            predictor = left
+                        elif pb <= pc:
+                            predictor = up
+                        else:
+                            predictor = up_left
+
+                        scanline[i] = (scanline[i] + predictor) & 0xFF
+                else:
                     obs.script_log(
-                        obs.LOG_WARNING,
-                        f"PNG filter {filter_byte} not supported, may cause corruption",
+                        obs.LOG_WARNING, f"Unknown filter type {filter_type} at row {y}"
                     )
 
-                # Convert different formats to RGB
-                if color_type == 2:  # Already RGB
-                    if bit_depth == 8:
-                        pixels.append(bytes(pixel_data))
-                    else:
-                        # Convert 16-bit to 8-bit
-                        rgb_data = []
-                        for i in range(
-                            0, len(pixel_data), 6
-                        ):  # 2 bytes per channel * 3 channels
-                            if i + 5 < len(pixel_data):
-                                r = pixel_data[i] if i < len(pixel_data) else 0
-                                g = pixel_data[i + 2] if i + 2 < len(pixel_data) else 0
-                                b = pixel_data[i + 4] if i + 4 < len(pixel_data) else 0
-                                rgb_data.extend([r, g, b])
-                        pixels.append(bytes(rgb_data))
-                elif color_type == 6:  # RGBA - convert to RGB
-                    if bit_depth == 8:
-                        rgb_data = []
-                        for i in range(0, len(pixel_data), 4):  # Skip alpha channel
-                            if i + 2 < len(pixel_data):
-                                rgb_data.extend(pixel_data[i : i + 3])
-                        pixels.append(bytes(rgb_data))
-                    else:
-                        # Convert 16-bit RGBA to 8-bit RGB
-                        rgb_data = []
-                        for i in range(
-                            0, len(pixel_data), 8
-                        ):  # 2 bytes per channel * 4 channels
-                            if i + 5 < len(pixel_data):
-                                r = pixel_data[i]
-                                g = pixel_data[i + 2]
-                                b = pixel_data[i + 4]
-                                rgb_data.extend([r, g, b])
-                        pixels.append(bytes(rgb_data))
-                elif color_type == 0:  # Grayscale - convert to RGB
-                    rgb_data = []
-                    for gray in pixel_data:
-                        rgb_data.extend([gray, gray, gray])
-                    pixels.append(bytes(rgb_data))
-                else:
-                    # Unsupported color type, create black row
-                    black_row = bytes([0] * (width * 3))
-                    pixels.append(black_row)
+                prev_row = scanline[:]
 
+                # Convert to RGB format
+                if color_type == 2 and bit_depth == 8:  # RGB
+                    pixels.append(bytes(scanline))
+                elif color_type == 6 and bit_depth == 8:  # RGBA -> RGB
+                    rgb_row = []
+                    for i in range(0, len(scanline), 4):
+                        rgb_row.extend(scanline[i : i + 3])  # Skip alpha
+                    pixels.append(bytes(rgb_row))
+                elif color_type == 0:  # Grayscale -> RGB
+                    rgb_row = []
+                    step = bit_depth // 8 if bit_depth >= 8 else 1
+                    for i in range(0, len(scanline), step):
+                        gray = scanline[i]
+                        rgb_row.extend([gray, gray, gray])
+                    pixels.append(bytes(rgb_row))
+                else:
+                    obs.script_log(
+                        obs.LOG_WARNING,
+                        f"Unsupported format conversion: type {color_type}, depth {bit_depth}",
+                    )
+                    return None, 0, 0
+
+            obs.script_log(obs.LOG_INFO, f"Successfully loaded PNG: {width}x{height}")
             return pixels, width, height
 
     except Exception as e:
@@ -1192,10 +1242,13 @@ def _draw_filled_rect(pixels, width, height, x1, y1, x2, y2, color):
                         pixels[y] = bytes(row)
 
 
-def _draw_text_bitmap(pixels, width, height, x, y, text, color=(255, 255, 255)):
-    """Draw text using a comprehensive 8x8 bitmap font"""
+def _draw_text_bitmap(
+    pixels, width, height, x, y, text, color=(255, 255, 255), scale=1.0
+):
+    """Draw text using a comprehensive 8x8 bitmap font with scaling support"""
     # Complete 8x8 bitmap font for ASCII characters
     # Includes numbers, letters (upper/lowercase), and common symbols
+    # Scale parameter allows font size scaling
     char_patterns = {
         # Numbers for lap times (0-9)
         "0": [
@@ -1945,22 +1998,30 @@ def _draw_text_bitmap(pixels, width, height, x, y, text, color=(255, 255, 255)):
     }
 
     current_x = x
+    font_size = max(1, int(8 * scale * 3))  # Scale the 8x8 font by 3x additional
+    char_spacing = max(
+        1, int(9 * scale * 3)
+    )  # Scale character spacing by 3x additional
+
     for char in text.lower():
         if char in char_patterns:
             pattern = char_patterns[char]
             for row_idx, row_pattern in enumerate(pattern):
-                char_y = y + row_idx
-                if 0 <= char_y < height:
-                    for bit_idx in range(8):
-                        if row_pattern & (1 << (7 - bit_idx)):
-                            char_x = current_x + bit_idx
-                            if 0 <= char_x < width:
-                                pixel_offset = char_x * 3
-                                if pixel_offset + 2 < len(pixels[char_y]):
-                                    row = bytearray(pixels[char_y])
-                                    row[pixel_offset : pixel_offset + 3] = color
-                                    pixels[char_y] = bytes(row)
-        current_x += 9  # 8 pixels + 1 pixel spacing
+                for bit_idx in range(8):
+                    if row_pattern & (1 << (7 - bit_idx)):
+                        # Draw scaled pixels (scale x scale x 3 block for each original pixel)
+                        pixel_scale = max(1, int(scale * 3))
+                        for sy in range(pixel_scale):
+                            for sx in range(pixel_scale):
+                                char_y = y + (row_idx * pixel_scale) + sy
+                                char_x = current_x + (bit_idx * pixel_scale) + sx
+                                if 0 <= char_x < width and 0 <= char_y < height:
+                                    pixel_offset = char_x * 3
+                                    if pixel_offset + 2 < len(pixels[char_y]):
+                                        row = bytearray(pixels[char_y])
+                                        row[pixel_offset : pixel_offset + 3] = color
+                                        pixels[char_y] = bytes(row)
+        current_x += char_spacing
 
 
 def _save_png_file(pixels, width, height, filename):
@@ -2007,17 +2068,23 @@ def _find_screenshot_for_run(base_path, run_number, track):
     # Try various screenshot patterns and locations
     search_patterns = [
         # In base path
-        os.path.join(base_path, "*.png"),
-        os.path.join(base_path, "*.jpg"),
-        os.path.join(base_path, "*.jpeg"),
+        os.path.join(base_path, "*-Final.png"),
+        os.path.join(base_path, "*-Final.jpg"),
+        os.path.join(base_path, "*-Final.jpeg"),
         # In track-specific subfolder
-        os.path.join(base_path, make_filesystem_safe(track), "*.png"),
-        os.path.join(base_path, make_filesystem_safe(track), "*.jpg"),
-        os.path.join(base_path, make_filesystem_safe(track), "*.jpeg"),
+        os.path.join(base_path, make_filesystem_safe(track), "*-Final.png"),
+        os.path.join(base_path, make_filesystem_safe(track), "*-Final.jpg"),
+        os.path.join(base_path, make_filesystem_safe(track), "*-Final.jpeg"),
         # With track name in parent directory
-        os.path.join(os.path.dirname(base_path), make_filesystem_safe(track), "*.png"),
-        os.path.join(os.path.dirname(base_path), make_filesystem_safe(track), "*.jpg"),
-        os.path.join(os.path.dirname(base_path), make_filesystem_safe(track), "*.jpeg"),
+        os.path.join(
+            os.path.dirname(base_path), make_filesystem_safe(track), "*-Final.png"
+        ),
+        os.path.join(
+            os.path.dirname(base_path), make_filesystem_safe(track), "*-Final.jpg"
+        ),
+        os.path.join(
+            os.path.dirname(base_path), make_filesystem_safe(track), "*-Final.jpeg"
+        ),
     ]
 
     all_screenshots = []
@@ -2052,16 +2119,19 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
             screenshot_path = _find_screenshot_for_run(base_path, run_number, track)
 
         # Load background image if available
-        # Note: PNG reading is currently disabled due to complexity with filters and formats
-        # Will use default background for now
         background_pixels, bg_width, bg_height = None, 0, 0
         if screenshot_path and os.path.exists(screenshot_path):
             obs.script_log(
                 obs.LOG_INFO,
-                f"Screenshot found: {os.path.basename(screenshot_path)} (background loading temporarily disabled)",
+                f"Loading screenshot background: {os.path.basename(screenshot_path)}",
             )
-            # Temporarily disable PNG reading until we can properly handle all PNG formats
-            # background_pixels, bg_width, bg_height = _read_png_file(screenshot_path)
+            background_pixels, bg_width, bg_height = _read_png_file(screenshot_path)
+
+            if background_pixels is None:
+                obs.script_log(
+                    obs.LOG_WARNING,
+                    f"Failed to load screenshot {os.path.basename(screenshot_path)}, using default background",
+                )
 
         # Set image dimensions
         if background_pixels and bg_width > 0 and bg_height > 0:
@@ -2079,12 +2149,35 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
 
         # Draw semi-transparent background for text area
         # Position text in bottom-right corner for better visibility
-        text_area_width = 350
+        # Make size and position relative to image dimensions for consistency
+
+        # Base dimensions on image size (roughly 25% of width, auto height) scaled by user setting
+        base_width = max(400, int(width * 0.25))  # At least 400px, or 25% of width
+        text_area_width = int(base_width * g_lap_times_scale)
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Using lap times scale: {g_lap_times_scale}x (box: {text_area_width}px, font: {int(8 * g_lap_times_scale * 3)}px)",
+        )
+
+        # Calculate height based on content and relative to image height, scaled by user setting
+        base_padding = max(20, int(height * 0.02 * g_lap_times_scale))  # Scaled padding
+        line_spacing = max(
+            25, int(height * 0.025 * g_lap_times_scale)
+        )  # Scaled line spacing
         text_area_height = (
-            60 + (len(lap_times) * 30) + 80
-        )  # Header + laps + total + padding
-        text_x = width - text_area_width - 20
-        text_y = height - text_area_height - 20
+            base_padding * 3  # Top padding
+            + line_spacing * 2  # Track title space
+            + (len(lap_times) * line_spacing)  # Lap times
+            + line_spacing * 2  # Separator space
+            + line_spacing * 2  # Total time space
+            + base_padding * 2  # Bottom padding
+        )
+
+        # Position relative to image size (2% margin from edges) scaled by user setting
+        margin_x = max(20, int(width * 0.02 * g_lap_times_scale))  # Scaled margin
+        margin_y = max(20, int(height * 0.02 * g_lap_times_scale))  # Scaled margin
+        text_x = width - text_area_width - margin_x
+        text_y = height - text_area_height - margin_y
 
         # Draw dark semi-transparent background for better text readability
         _draw_filled_rect(
@@ -2111,49 +2204,62 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
         # Draw text
         current_y = text_y
 
+        # Add top padding
+        current_y += base_padding
+
         # Track title
         _draw_text_bitmap(
             pixels,
             width,
             height,
-            text_x,
+            text_x + base_padding,  # Indent from box edge
             current_y,
             f"Track: {track[:50]}",
             (255, 255, 255),
+            g_lap_times_scale,  # Scale the font
         )
-        current_y += 40
+        current_y += line_spacing * 2  # Use relative spacing
 
         # Lap times
         for lap in lap_times:
             lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
             color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
             _draw_text_bitmap(
-                pixels, width, height, text_x, current_y, lap_text[:50], color
+                pixels,
+                width,
+                height,
+                text_x + base_padding,
+                current_y,
+                lap_text[:50],
+                color,
+                g_lap_times_scale,  # Scale the font
             )
-            current_y += 30
+            current_y += line_spacing  # Use relative spacing
 
         # Separator line
+        line_margin = base_padding // 2
         _draw_filled_rect(
             pixels,
             width,
             height,
-            text_x,
-            current_y + 10,
-            text_x + 400,
-            current_y + 12,
+            text_x + line_margin,
+            current_y + line_margin,
+            text_x + text_area_width - line_margin,  # Scale line to box width
+            current_y + line_margin + 2,
             (255, 255, 255),
         )
-        current_y += 40
+        current_y += line_spacing * 2  # Use relative spacing
 
         # Total time
         _draw_text_bitmap(
             pixels,
             width,
             height,
-            text_x,
+            text_x + base_padding,  # Indent from box edge
             current_y,
             f"Total: {total_time_str}",
             (100, 255, 100),
+            g_lap_times_scale,  # Scale the font
         )
 
         # Generate output filename
