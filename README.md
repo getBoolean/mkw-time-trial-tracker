@@ -121,7 +121,6 @@ Manually generates a composite image showing all lap times for a specific run ov
 
 - Automatically combines lap times with screenshot
 - Shows individual lap times and total time
-- Creates semi-transparent overlay for readability
 - Outputs file named `LapTimes_[Track]_Run[X]_[timestamp].png`
 - Automatically triggered when final lap is saved with "Is Final Lap" checked
 

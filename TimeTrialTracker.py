@@ -26,7 +26,7 @@ generate_image_action_name = "MKW Generate Lap Times Image"
 # Script-level settings (updated via script_update)
 g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
 g_repo_path = ""
-g_lap_times_scale = 1.0  # Scale factor for lap times box size
+g_lap_times_scale = 3.0  # Fixed scale factor for lap times box size
 
 
 ###############################################################################
@@ -262,14 +262,6 @@ def script_properties():
         None,
         None,
     )
-    obs.obs_properties_add_float_slider(
-        props,
-        "lap_times_scale",
-        "Lap Times Box Scale",
-        0.5,  # Minimum: 0.5x (50%)
-        5.0,  # Maximum: 5.0x (500%)
-        0.1,  # Step: 0.1
-    )
     obs.obs_properties_add_button(
         props,
         "process_queue_btn",
@@ -288,20 +280,16 @@ def script_properties():
 def script_defaults(settings):
     obs.obs_data_set_default_string(settings, "base_path", g_base_path)
     obs.obs_data_set_default_string(settings, "repo_path", g_repo_path)
-    obs.obs_data_set_default_double(settings, "lap_times_scale", g_lap_times_scale)
 
 
 def script_update(settings):
-    global g_base_path, g_repo_path, g_lap_times_scale
+    global g_base_path, g_repo_path
     base_path_val = obs.obs_data_get_string(settings, "base_path")
     repo_path_val = obs.obs_data_get_string(settings, "repo_path")
-    scale_val = obs.obs_data_get_double(settings, "lap_times_scale")
     if base_path_val:
         g_base_path = base_path_val
     if repo_path_val:
         g_repo_path = repo_path_val
-    if scale_val > 0:
-        g_lap_times_scale = scale_val
 
 
 ###############################################################################
@@ -885,7 +873,7 @@ def _flush_queue(base_path):
             # If this is the final lap from queue, create the lap times image
             if is_final_lap:
                 try:
-                    _create_lap_times_image(base_path, run_number, track)
+                    _create_lap_times_image(base_path, run_number)
                 except Exception as e:
                     obs.script_log(
                         obs.LOG_WARNING,
@@ -939,12 +927,27 @@ def _get_last_final_lap(base_path):
         if not final_laps:
             return None
 
-        # Sort by timestamp to get the most recent
-        final_laps.sort(key=lambda x: x.get("Timestamp", ""), reverse=True)
-        last_final_lap = final_laps[0]
+        # Pick the highest run number among final laps
+        def _to_int(v):
+            try:
+                return int(str(v).strip())
+            except Exception:
+                return -1
+
+        highest_run = max((_to_int(r.get("RunNumber")) for r in final_laps), default=-1)
+        if highest_run < 0:
+            return None
+
+        # From those with the highest run number, pick the latest by timestamp
+        candidates = [
+            r for r in final_laps if _to_int(r.get("RunNumber")) == highest_run
+        ]
+        # Timestamps are in '%Y-%m-%d %H:%M:%S' which are lexicographically sortable
+        candidates.sort(key=lambda x: x.get("Timestamp", ""), reverse=True)
+        last_final_lap = candidates[0]
 
         return {
-            "run_number": int(last_final_lap.get("RunNumber", 0)),
+            "run_number": highest_run,
             "track": last_final_lap.get("Track", ""),
             "timestamp": last_final_lap.get("Timestamp", ""),
         }
@@ -971,7 +974,7 @@ def _on_create_last_image_button(props, prop):
                 f"Creating image for Run {run_number} on {track} (completed at {timestamp})",
             )
 
-            result = _create_lap_times_image(g_base_path, run_number, track)
+            result = _create_lap_times_image(g_base_path, run_number)
             if result:
                 obs.script_log(
                     obs.LOG_INFO,
@@ -992,22 +995,46 @@ def _on_create_last_image_button(props, prop):
 ###############################################################################
 
 
-def _get_lap_times_for_run(base_path, run_number, track):
-    """Get all lap times for a specific run and track from CSV data"""
+def _get_lap_times_for_run(base_path, run_number):
+    """Get all lap times for a specific run from CSV data and return (laps, track)."""
     csv_path = _csv_file_path(base_path)
     if not os.path.exists(csv_path):
-        return []
+        obs.script_log(obs.LOG_WARNING, f"CSV file not found: {csv_path}")
+        return [], None
 
     try:
         headers, existing = _read_csv_data(csv_path)
 
-        # Get all laps for this run
-        run_laps = [
-            r
-            for r in existing
-            if str(r.get("RunNumber")) == str(run_number)
-            and str(r.get("Track")) == str(track)
-        ]
+        # Debug: Show available run numbers and tracks
+        available_runs = set()
+        available_tracks = set()
+        for row in existing:
+            if row.get("RunNumber"):
+                available_runs.add(str(row.get("RunNumber")))
+            if row.get("Track"):
+                available_tracks.add(str(row.get("Track")))
+
+        obs.script_log(obs.LOG_INFO, f"Looking for run {run_number}")
+        obs.script_log(obs.LOG_INFO, f"Available run numbers: {sorted(available_runs)}")
+        obs.script_log(obs.LOG_INFO, f"Available tracks: {sorted(available_tracks)}")
+
+        # Get all laps for this run (ignore track)
+        run_laps = [r for r in existing if str(r.get("RunNumber")) == str(run_number)]
+
+        obs.script_log(obs.LOG_INFO, f"Found {len(run_laps)} laps for run {run_number}")
+
+        # Determine track name from CSV rows for this run
+        track_from_csv = None
+        if run_laps:
+            # Prefer the most frequent track value among the run rows
+            track_counts = {}
+            for r in run_laps:
+                t = str(r.get("Track", "")).strip()
+                if not t:
+                    continue
+                track_counts[t] = track_counts.get(t, 0) + 1
+            if track_counts:
+                track_from_csv = max(track_counts.items(), key=lambda kv: kv[1])[0]
 
         # Sort by lap number
         run_laps.sort(key=lambda x: int(x.get("LapNumber", 0)))
@@ -1023,13 +1050,13 @@ def _get_lap_times_for_run(base_path, run_number, track):
                     {"lap_number": lap_num, "time": lap_time, "is_final": is_final}
                 )
 
-        return lap_times
+        return lap_times, track_from_csv
 
     except Exception as e:
         obs.script_log(
             obs.LOG_WARNING, f"Error reading lap times for image generation: {e}"
         )
-        return []
+        return [], None
 
 
 def _read_png_file(filename):
@@ -1225,10 +1252,22 @@ def _create_png_image(width, height, bg_color=(30, 30, 30)):
 
 
 def _draw_filled_rect(pixels, width, height, x1, y1, x2, y2, color):
-    """Draw a filled rectangle on the pixel data"""
+    """Draw a filled rectangle on the pixel data with optional transparency"""
     # Clamp coordinates
     x1, y1 = max(0, x1), max(0, y1)
     x2, y2 = min(width - 1, x2), min(height - 1, y2)
+
+    # Handle both RGB and RGBA colors
+    if len(color) == 4:
+        # RGBA with alpha blending
+        r, g, b, alpha = color
+        alpha_ratio = alpha / 255.0
+        inv_alpha = 1.0 - alpha_ratio
+    else:
+        # RGB - solid color
+        r, g, b = color
+        alpha_ratio = 1.0
+        inv_alpha = 0.0
 
     for y in range(y1, y2 + 1):
         if 0 <= y < height:
@@ -1238,8 +1277,49 @@ def _draw_filled_rect(pixels, width, height, x1, y1, x2, y2, color):
                     pixel_offset = x * 3
                     if pixel_offset + 2 < len(pixels[y]):
                         row = bytearray(pixels[y])
-                        row[pixel_offset : pixel_offset + 3] = color
+
+                        if alpha_ratio < 1.0:
+                            # Alpha blending with existing pixel
+                            bg_r, bg_g, bg_b = row[pixel_offset : pixel_offset + 3]
+                            new_r = int(r * alpha_ratio + bg_r * inv_alpha)
+                            new_g = int(g * alpha_ratio + bg_g * inv_alpha)
+                            new_b = int(b * alpha_ratio + bg_b * inv_alpha)
+                            row[pixel_offset : pixel_offset + 3] = [new_r, new_g, new_b]
+                        else:
+                            # Solid color
+                            row[pixel_offset : pixel_offset + 3] = [r, g, b]
+
                         pixels[y] = bytes(row)
+
+
+def _draw_text_with_background(
+    pixels,
+    width,
+    height,
+    x,
+    y,
+    text,
+    text_color=(255, 255, 255),
+    bg_color=(0, 0, 0),
+    scale=1.0,
+    padding=5,
+):
+    """Draw text with individual background rectangle for better readability"""
+    # Calculate text dimensions
+    font_height = max(1, int(8 * scale * 3))
+    char_spacing = max(1, int(9 * scale * 3))
+    text_width = len(text) * char_spacing
+
+    # Draw background rectangle with padding
+    bg_x1 = max(0, x - padding)
+    bg_y1 = max(0, y - padding)
+    bg_x2 = min(width, x + text_width + padding)
+    bg_y2 = min(height, y + font_height + padding)
+
+    _draw_filled_rect(pixels, width, height, bg_x1, bg_y1, bg_x2, bg_y2, bg_color)
+
+    # Draw the text on top
+    _draw_text_bitmap(pixels, width, height, x, y, text, text_color, scale)
 
 
 def _draw_text_bitmap(
@@ -1998,12 +2078,9 @@ def _draw_text_bitmap(
     }
 
     current_x = x
-    font_size = max(1, int(8 * scale * 3))  # Scale the 8x8 font by 3x additional
-    char_spacing = max(
-        1, int(9 * scale * 3)
-    )  # Scale character spacing by 3x additional
+    char_spacing = max(1, int(9 * scale * 3))
 
-    for char in text.lower():
+    for char in text:
         if char in char_patterns:
             pattern = char_patterns[char]
             for row_idx, row_pattern in enumerate(pattern):
@@ -2061,62 +2138,147 @@ def _save_png_file(pixels, width, height, filename):
         f.write(iend_chunk)
 
 
-def _find_screenshot_for_run(base_path, run_number, track):
-    """Find the most recent screenshot that could be from this final lap"""
+def _extract_run_number_from_filename(filename):
+    """Extract run number from screenshot filename"""
+    import re
+
+    # Extract just the basename without path
+    basename = os.path.basename(filename)
+
+    # Look for pattern "Run-97" in filename like "Lap-Screenshot_Track-DK Spaceport_Run-97_Lap-6-Final.png"
+    pattern = r"[Rr]un-(\d+)"
+    match = re.search(pattern, basename)
+    if match:
+        try:
+            return int(match.group(1))
+        except (ValueError, IndexError):
+            pass
+
+    return None
+
+
+def _find_screenshot_for_run(base_path, run_number):
+    """Find screenshot that matches the run number, or most recent if no match.
+
+    Searches common locations and supports recursive discovery. Matches files like
+    "Lap-Screenshot_..._Run-97_...-Final.png" (PNG/JPG/JPEG).
+    """
     import glob
 
-    # Try various screenshot patterns and locations
+    base_dir = base_path
+    parent_dir = os.path.dirname(base_path)
+    grandparent_dir = os.path.dirname(parent_dir)
+
+    # Try various screenshot patterns and locations (PNG/JPG/JPEG)
     search_patterns = [
-        # In base path
-        os.path.join(base_path, "*-Final.png"),
-        os.path.join(base_path, "*-Final.jpg"),
-        os.path.join(base_path, "*-Final.jpeg"),
-        # In track-specific subfolder
-        os.path.join(base_path, make_filesystem_safe(track), "*-Final.png"),
-        os.path.join(base_path, make_filesystem_safe(track), "*-Final.jpg"),
-        os.path.join(base_path, make_filesystem_safe(track), "*-Final.jpeg"),
-        # With track name in parent directory
-        os.path.join(
-            os.path.dirname(base_path), make_filesystem_safe(track), "*-Final.png"
-        ),
-        os.path.join(
-            os.path.dirname(base_path), make_filesystem_safe(track), "*-Final.jpg"
-        ),
-        os.path.join(
-            os.path.dirname(base_path), make_filesystem_safe(track), "*-Final.jpeg"
-        ),
+        # In base directory (non-recursive)
+        os.path.join(base_dir, "*-Final.png"),
+        os.path.join(base_dir, "*-Final.jpg"),
+        os.path.join(base_dir, "*-Final.jpeg"),
+        os.path.join(base_dir, "*Final.png"),
+        os.path.join(base_dir, "*Final.jpg"),
+        os.path.join(base_dir, "*Final.jpeg"),
+        # In base directory recursively
+        os.path.join(base_dir, "**", "*-Final.png"),
+        os.path.join(base_dir, "**", "*-Final.jpg"),
+        os.path.join(base_dir, "**", "*-Final.jpeg"),
+        os.path.join(base_dir, "**", "*Final.png"),
+        os.path.join(base_dir, "**", "*Final.jpg"),
+        os.path.join(base_dir, "**", "*Final.jpeg"),
+        # In parent directory recursively
+        os.path.join(parent_dir, "**", "*-Final.png"),
+        os.path.join(parent_dir, "**", "*-Final.jpg"),
+        os.path.join(parent_dir, "**", "*-Final.jpeg"),
+        os.path.join(parent_dir, "**", "*Final.png"),
+        os.path.join(parent_dir, "**", "*Final.jpg"),
+        os.path.join(parent_dir, "**", "*Final.jpeg"),
+        # In grandparent directory recursively (common "G:/OBS" root)
+        os.path.join(grandparent_dir, "**", "*-Final.png"),
+        os.path.join(grandparent_dir, "**", "*-Final.jpg"),
+        os.path.join(grandparent_dir, "**", "*-Final.jpeg"),
+        os.path.join(grandparent_dir, "**", "*Final.png"),
+        os.path.join(grandparent_dir, "**", "*Final.jpg"),
+        os.path.join(grandparent_dir, "**", "*Final.jpeg"),
     ]
 
     all_screenshots = []
     for pattern in search_patterns:
         try:
-            all_screenshots.extend(glob.glob(pattern))
+            matches = glob.glob(pattern, recursive=True)
+            if matches:
+                all_screenshots.extend(matches)
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Search pattern matched {len(matches)} files: {pattern}",
+                )
         except (OSError, IOError):
             continue
 
     if not all_screenshots:
-        return None
+        obs.script_log(obs.LOG_INFO, "No *-Final.(png|jpg|jpeg) screenshots found")
+        return None, None
 
-    # Sort by modification time (most recent first)
+    # First, try to find a screenshot that matches the run number
+    for screenshot in all_screenshots:
+        extracted_run = _extract_run_number_from_filename(screenshot)
+        if extracted_run == run_number:
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Found matching screenshot for run {run_number}: {screenshot}",
+            )
+            return screenshot, extracted_run
+        else:
+            if extracted_run is not None:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Candidate not used (Run-{extracted_run}): {screenshot}",
+                )
+
+    # If no exact match, sort by modification time and use the most recent
     all_screenshots.sort(key=os.path.getmtime, reverse=True)
+    most_recent = all_screenshots[0]
+    extracted_run = _extract_run_number_from_filename(most_recent)
 
-    # Return the most recent screenshot
-    return all_screenshots[0]
+    if extracted_run:
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Using most recent screenshot with run {extracted_run}: {most_recent}",
+        )
+    else:
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Using most recent screenshot (no run number detected): {most_recent}",
+        )
+
+    return most_recent, extracted_run
 
 
-def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=None):
+def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
     """Create a simple image with lap times using pure Python"""
     try:
-        # Get lap times for this run
-        lap_times = _get_lap_times_for_run(base_path, run_number, track)
-        if not lap_times:
-            obs.script_log(obs.LOG_WARNING, "No lap times found for image generation")
-            return None
-
-        # Try to find and load a background screenshot
+        # Try to find and extract run number from screenshot first
         screenshot_path = final_screenshot_path
+        extracted_run_number = None
+
         if not screenshot_path:
-            screenshot_path = _find_screenshot_for_run(base_path, run_number, track)
+            screenshot_path, extracted_run_number = _find_screenshot_for_run(
+                base_path, run_number
+            )
+        obs.script_log(obs.LOG_INFO, f"Screenshot path: {screenshot_path}")
+
+        # Use extracted run number if available, otherwise fall back to provided run_number
+        actual_run_number = (
+            extracted_run_number if extracted_run_number is not None else run_number
+        )
+        obs.script_log(obs.LOG_INFO, f"Extracted run number: {actual_run_number}")
+
+        # Get lap times and track (from CSV) for the actual run number
+        lap_times, track_from_csv = _get_lap_times_for_run(base_path, actual_run_number)
+        if not lap_times:
+            obs.script_log(
+                obs.LOG_WARNING, f"No lap times found for run {actual_run_number}"
+            )
+            return None
 
         # Load background image if available
         background_pixels, bg_width, bg_height = None, 0, 0
@@ -2143,7 +2305,7 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
             )
         else:
             # Fallback to default size with dark background
-            width, height = 800, 600
+            width, height = 3840, 2160
             pixels = _create_png_image(width, height, bg_color=(30, 30, 30))
             obs.script_log(obs.LOG_INFO, f"Using default background ({width}x{height})")
 
@@ -2156,40 +2318,18 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
         text_area_width = int(base_width * g_lap_times_scale)
         obs.script_log(
             obs.LOG_INFO,
-            f"Using lap times scale: {g_lap_times_scale}x (box: {text_area_width}px, font: {int(8 * g_lap_times_scale * 3)}px)",
+            f"Lap times overlay: {text_area_width}px box, {int(8 * g_lap_times_scale * 3)}px font",
         )
 
-        # Calculate height based on content and relative to image height, scaled by user setting
-        base_padding = max(20, int(height * 0.02 * g_lap_times_scale))  # Scaled padding
-        line_spacing = max(
-            25, int(height * 0.025 * g_lap_times_scale)
-        )  # Scaled line spacing
-        text_area_height = (
-            base_padding * 3  # Top padding
-            + line_spacing * 2  # Track title space
-            + (len(lap_times) * line_spacing)  # Lap times
-            + line_spacing * 2  # Separator space
-            + line_spacing * 2  # Total time space
-            + base_padding * 2  # Bottom padding
-        )
+        # Calculate spacing and padding relative to image size
+        base_padding = max(20, int(height * 0.02 * g_lap_times_scale))
+        line_spacing = max(25, int(height * 0.025 * g_lap_times_scale))
 
-        # Position relative to image size (2% margin from edges) scaled by user setting
-        margin_x = max(20, int(width * 0.02 * g_lap_times_scale))  # Scaled margin
-        margin_y = max(20, int(height * 0.02 * g_lap_times_scale))  # Scaled margin
-        text_x = width - text_area_width - margin_x
-        text_y = height - text_area_height - margin_y
-
-        # Draw dark semi-transparent background for better text readability
-        _draw_filled_rect(
-            pixels,
-            width,
-            height,
-            text_x - 10,
-            text_y - 10,
-            text_x + text_area_width + 10,
-            text_y + text_area_height + 10,
-            (0, 0, 0),  # Pure black background for max contrast
-        )
+        # Position in top-left corner with 2% margin from edges
+        margin_x = max(20, int(width * 0.02 * g_lap_times_scale))
+        margin_y = max(20, int(height * 0.02 * g_lap_times_scale))
+        text_x = margin_x
+        text_y = margin_y
 
         # Calculate total time
         total_seconds = 0.0
@@ -2201,30 +2341,24 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
 
         total_time_str = _convert_seconds_to_laptime(total_seconds)
 
-        # Draw text
-        current_y = text_y
-
-        # Add top padding
-        current_y += base_padding
-
-        # Track title
-        _draw_text_bitmap(
+        current_y = text_y + base_padding
+        _draw_text_with_background(
             pixels,
             width,
             height,
-            text_x + base_padding,  # Indent from box edge
+            text_x + base_padding,
             current_y,
-            f"Track: {track[:50]}",
+            f"Track: {track_from_csv[:50]}",
             (255, 255, 255),
-            g_lap_times_scale,  # Scale the font
+            (0, 0, 0, 220),
+            g_lap_times_scale,
+            int(8 * g_lap_times_scale),
         )
-        current_y += line_spacing * 2  # Use relative spacing
-
-        # Lap times
+        current_y += line_spacing * 2
         for lap in lap_times:
             lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
             color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
-            _draw_text_bitmap(
+            _draw_text_with_background(
                 pixels,
                 width,
                 height,
@@ -2232,40 +2366,32 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
                 current_y,
                 lap_text[:50],
                 color,
-                g_lap_times_scale,  # Scale the font
+                (0, 0, 0, 220),
+                g_lap_times_scale,
+                int(8 * g_lap_times_scale),
             )
-            current_y += line_spacing  # Use relative spacing
+            current_y += line_spacing
 
-        # Separator line
-        line_margin = base_padding // 2
-        _draw_filled_rect(
+        current_y += line_spacing
+        _draw_text_with_background(
             pixels,
             width,
             height,
-            text_x + line_margin,
-            current_y + line_margin,
-            text_x + text_area_width - line_margin,  # Scale line to box width
-            current_y + line_margin + 2,
-            (255, 255, 255),
-        )
-        current_y += line_spacing * 2  # Use relative spacing
-
-        # Total time
-        _draw_text_bitmap(
-            pixels,
-            width,
-            height,
-            text_x + base_padding,  # Indent from box edge
+            text_x + base_padding,
             current_y,
             f"Total: {total_time_str}",
             (100, 255, 100),
-            g_lap_times_scale,  # Scale the font
+            (0, 0, 0, 220),
+            g_lap_times_scale,
+            int(8 * g_lap_times_scale),
         )
 
         # Generate output filename
-        safe_track = make_filesystem_safe(track)
+        safe_track = make_filesystem_safe(track_from_csv)
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        output_filename = f"LapTimes_{safe_track}_Run{run_number}_{timestamp}.png"
+        output_filename = (
+            f"LapTimes_{safe_track}_Run{actual_run_number}_{timestamp}.png"
+        )
         output_path = os.path.join(base_path, output_filename)
 
         # Save the image
@@ -2472,7 +2598,7 @@ def run_action_save_lap(data, instance_id):
         # If this is the final lap, create the lap times image
         if is_final_lap:
             try:
-                _create_lap_times_image(g_base_path, run_number, track)
+                _create_lap_times_image(g_base_path, run_number)
             except Exception as e:
                 obs.script_log(
                     obs.LOG_WARNING, f"Failed to create lap times image: {e}"
@@ -2554,9 +2680,6 @@ def get_generate_image_action_properties():
         props, "run_number_var", "Run Number Variable Name", obs.OBS_TEXT_DEFAULT
     )
     obs.obs_properties_add_text(
-        props, "track_var", "Track Variable Name", obs.OBS_TEXT_DEFAULT
-    )
-    obs.obs_properties_add_text(
         props,
         "screenshot_path_var",
         "Screenshot Path Variable (optional)",
@@ -2568,7 +2691,6 @@ def get_generate_image_action_properties():
 def get_generate_image_action_defaults():
     defaults = obs.obs_data_create()
     obs.obs_data_set_default_string(defaults, "run_number_var", "TT Run Number")
-    obs.obs_data_set_default_string(defaults, "track_var", "Current Track")
     obs.obs_data_set_default_string(defaults, "screenshot_path_var", "")
     return defaults
 
@@ -2577,12 +2699,10 @@ def run_action_generate_image(data, instance_id):
     try:
         # Get variable names from action settings
         run_number_var = obs.obs_data_get_string(data, "run_number_var")
-        track_var = obs.obs_data_get_string(data, "track_var")
         screenshot_path_var = obs.obs_data_get_string(data, "screenshot_path_var")
 
         # Get values from variables
         run_number_str = advss_get_variable_value(run_number_var)
-        track = advss_get_variable_value(track_var)
         screenshot_path = (
             advss_get_variable_value(screenshot_path_var)
             if screenshot_path_var
@@ -2595,18 +2715,12 @@ def run_action_generate_image(data, instance_id):
                 obs.LOG_WARNING, f"Run number variable '{run_number_var}' not found"
             )
             return False
-        if track is None:
-            obs.script_log(obs.LOG_WARNING, f"Track variable '{track_var}' not found")
-            return False
 
         # Convert string values to appropriate types
         run_number = int(run_number_str.strip())
-        track = track.strip()
 
         # Generate the image
-        result = _create_lap_times_image(
-            g_base_path, run_number, track, screenshot_path
-        )
+        result = _create_lap_times_image(g_base_path, run_number, screenshot_path)
 
         if result:
             obs.script_log(
