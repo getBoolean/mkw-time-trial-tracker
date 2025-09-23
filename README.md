@@ -6,13 +6,12 @@ A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plu
 
 1. Install Advanced Scene Switcher:
    - Download from the plugin's GitHub and install, then restart OBS.
-2. Download and add this script to OBS:
+2. [Download](https://github.com/getBoolean/mk-time-trial-tracker/releases/latest) the bundle, extract, and add this script to OBS:
    - OBS → **Tools** → **Scripts** → **+** → select `TimeTrialTracker.py`.
 3. Import the provided macro:
-   - OBS → **Tools** → **Advanced Scene Switcher** → Macros (⋯) → **Import** → choose `macros-export.json`.
-   - **Download**: [macros-export.json](./macros-export.json)
+   - OBS → **Tools** → **Advanced Scene Switcher** → Macros (⋯) → **Import** → choose `macros-export.json` from the extracted bundle
 4. After import, adjust names/paths if needed (capture source name, project paths, save locations).
-5. In Advanced Scene Switcher, open the imported `current-track` macro and ensure the `MKW Track` action's setting **OCR Text Variable Name** matches your OCR variable (default: `Current Track OCR`).
+5. In Advanced Scene Switcher, open all the imported macros and ensure the correct settings are applied. See [Macro Setup Guide](#macro-setup-guide) for details.
 6. Disable HDR in the Switch TV settings. The images included in the bundle were taken with HDR off.
 
 > **For detailed setup instructions with visual guides, see the [Macro Setup Guide](#macro-setup-guide) section below.**
