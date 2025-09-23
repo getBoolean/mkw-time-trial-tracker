@@ -28,7 +28,11 @@ def run_action(data, instance_id):
         obs.LOG_INFO,
         "OCR text: " + ocr_text + " - Identified track: " + identified_track,
     )
-    advss_set_temp_var_value("identified_track", ocr_text, instance_id)
+    # Set macro properties: canonical name and a filesystem-safe variant
+    advss_set_temp_var_value("identified_track", identified_track, instance_id)
+    advss_set_temp_var_value(
+        "identified_track_safe", make_filesystem_safe(identified_track), instance_id
+    )
 
 
 def find_closest_track(ocr_text):
@@ -162,6 +166,26 @@ def find_closest_track(ocr_text):
     return best_match
 
 
+def make_filesystem_safe(name: str) -> str:
+    """Create a file path safe version of the track name.
+
+    - Remove characters invalid on Windows file systems: <>:"/\|?*
+    - Remove punctuation commonly problematic in paths: ' , .
+    - Collapse whitespace to single spaces and trim
+    """
+    import re
+
+    s = name
+    # Remove Windows invalid filename characters
+    s = re.sub(r'[<>:"/\\|?*]', "", s)
+    # Remove specific punctuation mentioned and common ones
+    s = s.replace("'", "").replace(",", "").replace(".", "")
+    # Collapse whitespace
+    s = " ".join(s.split())
+    # Optionally, limit overly long names
+    return s[:100]
+
+
 def get_action_properties():
     props = obs.obs_properties_create()
     obs.obs_properties_add_text(
@@ -180,7 +204,12 @@ def get_action_macro_properties():
     return [
         MacroProperty(
             "identified_track", "Identified Track", "Identified Track for MKW"
-        )
+        ),
+        MacroProperty(
+            "identified_track_safe",
+            "Identified Track (Filename Safe)",
+            "File path safe version of Identified Track",
+        ),
     ]
 
 
