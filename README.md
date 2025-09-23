@@ -65,7 +65,46 @@ Or download the repository as a ZIP file:
 5. Click **OK** to load the script
 6. Configure the script properties:
    - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
-   - **Script Repo Path**: Path to this repository (optional, for future features)
+   - **Script Repo Path Variable Name**: Name of an Advanced Scene Switcher variable containing the path to this repository (see [Script Repo Path Configuration](#script-repo-path-configuration) below)
+
+## Script Repo Path Configuration
+
+The Script Repo Path feature allows macros to access the path to this repository through variables. This is useful for macros that need to reference image files, templates, or other resources in the repository.
+
+### Setup Instructions
+
+1. **Create a variable in Advanced Scene Switcher:**
+   - Open OBS Studio and go to **Tools** → **Advanced Scene Switcher**
+   - Navigate to the **Variables** tab
+   - Click **Add** to create a new variable
+   - Set the **Name** to `Script Repo Path`
+   - Set the **Current balue** to the full path of your cloned repository (e.g., `C:\dev\mk-time-trial-tracker`)
+   - Set the **Save/load behavior** to **Save variable value**
+
+2. **Configure the script:**
+   - In the script properties, set **Script Repo Path Variable Name** to match your variable name (default: `Script Repo Path`)
+
+### Using the Repo Path in Macros
+
+Once configured, you can access the repository path in your macros:
+
+```text
+${Script Repo Path}\image-file.png
+${Script Repo Path}\templates\macro-template.json
+```
+
+### Example Usage Scenarios
+
+- **Image file references**: `${Script Repo Path}\mkLogo.png`
+- **Template files**: `${Script Repo Path}\templates\track-overlay.png`
+- **Data files**: `${Script Repo Path}\track-data.json`
+- **Backup locations**: Moving files to `${Script Repo Path}\backups\`
+
+### Script Repo Path Troubleshooting
+
+- **"Script repo path variable set to: '[variable name]'"**: Success message indicating the script found your variable
+- **Variable not found errors**: Ensure the variable name in script properties exactly matches your Advanced Scene Switcher variable name
+- **Empty path values**: Check that your Advanced Scene Switcher variable has a valid path value set
 
 ## Usage
 
@@ -332,6 +371,7 @@ The script exposes macro properties (temporary variables) that can be used in ot
 
 - `identified_track`: Canonical track name from OCR
 - `identified_track_safe`: Filesystem-safe version of track name
+- `script_repo_path`: Path to the script repository from configured variable
 
 To use these elsewhere:
 
@@ -343,6 +383,7 @@ You can then reference variables in macros using `${Variable Name}`. Examples:
 
 - File path: `C:\OBS\Mario Kart World\${Current Track}\`
 - Text: `Current Track: ${Current Track}`
+- MKW image: `${Script Repo Path}\mkLogo.png`
 
 ## Advanced Configuration
 
