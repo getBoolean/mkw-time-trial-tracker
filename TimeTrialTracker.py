@@ -735,8 +735,6 @@ def _save_lap_to_csv(
         "Track",
         "Coins",
         "Shrooms",
-        "LastLapTime",
-        "LastLapTimeSeconds",
     ]
 
     # Ensure all required headers are present
@@ -798,8 +796,6 @@ def _save_lap_to_csv(
         "Track": str(track),
         "Coins": str(coins_to_save),
         "Shrooms": str(shrooms_to_save),
-        "LastLapTime": last_lap_time,
-        "LastLapTimeSeconds": str(last_lap_seconds) if last_lap_seconds else "",
     }
 
     # Add new row to existing data
@@ -869,38 +865,85 @@ def _on_process_queue_button(props, prop):
 def get_save_action_properties():
     props = obs.obs_properties_create()
     obs.obs_properties_add_text(
-        props, "lap_time", "Lap Time (m:ss.mmm)", obs.OBS_TEXT_DEFAULT
+        props, "lap_time_var", "Lap Time Variable Name", obs.OBS_TEXT_DEFAULT
     )
-    obs.obs_properties_add_int(props, "lap_number", "Lap Number", 1, 999999, 1)
+    obs.obs_properties_add_text(
+        props, "lap_number_var", "Lap Number Variable Name", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props, "run_number_var", "Run Number Variable Name", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props, "track_var", "Track Variable Name", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props, "coins_var", "Coins Variable Name", obs.OBS_TEXT_DEFAULT
+    )
+    obs.obs_properties_add_text(
+        props, "shrooms_var", "Shrooms Variable Name", obs.OBS_TEXT_DEFAULT
+    )
     obs.obs_properties_add_bool(props, "is_final_lap", "Is Final Lap")
-    obs.obs_properties_add_int(props, "run_number", "Run Number", 1, 999999, 1)
-    obs.obs_properties_add_text(props, "track", "Track", obs.OBS_TEXT_DEFAULT)
-    obs.obs_properties_add_int(props, "coins", "Coins (0-20)", 0, 20, 1)
-    obs.obs_properties_add_int(props, "shrooms", "Shrooms (0-3)", 0, 3, 1)
     return props
 
 
 def get_save_action_defaults():
     defaults = obs.obs_data_create()
-    obs.obs_data_set_default_string(defaults, "lap_time", "1:23.456")
-    obs.obs_data_set_default_int(defaults, "lap_number", 1)
+    obs.obs_data_set_default_string(defaults, "lap_time_var", "Current Lap Time OCR")
+    obs.obs_data_set_default_string(defaults, "lap_number_var", "Current TT Lap")
+    obs.obs_data_set_default_string(defaults, "run_number_var", "TT Run Number")
+    obs.obs_data_set_default_string(defaults, "track_var", "Current Track")
+    obs.obs_data_set_default_string(defaults, "coins_var", "CurrentCoins")
+    obs.obs_data_set_default_string(defaults, "shrooms_var", "UsedShrooms")
     obs.obs_data_set_default_bool(defaults, "is_final_lap", False)
-    obs.obs_data_set_default_int(defaults, "run_number", 1)
-    obs.obs_data_set_default_string(defaults, "track", "Mario Circuit")
-    obs.obs_data_set_default_int(defaults, "coins", 0)
-    obs.obs_data_set_default_int(defaults, "shrooms", 0)
     return defaults
 
 
 def run_action_save_lap(data, instance_id):
     try:
-        lap_time = obs.obs_data_get_string(data, "lap_time").strip()
-        lap_number = obs.obs_data_get_int(data, "lap_number")
+        # Get variable names from action settings
+        lap_time_var = obs.obs_data_get_string(data, "lap_time_var")
+        lap_number_var = obs.obs_data_get_string(data, "lap_number_var")
+        run_number_var = obs.obs_data_get_string(data, "run_number_var")
+        track_var = obs.obs_data_get_string(data, "track_var")
+        coins_var = obs.obs_data_get_string(data, "coins_var")
+        shrooms_var = obs.obs_data_get_string(data, "shrooms_var")
         is_final_lap = obs.obs_data_get_bool(data, "is_final_lap")
-        run_number = obs.obs_data_get_int(data, "run_number")
-        track = obs.obs_data_get_string(data, "track")
-        coins = obs.obs_data_get_int(data, "coins")
-        shrooms = obs.obs_data_get_int(data, "shrooms")
+
+        # Get values from variables
+        lap_time = advss_get_variable_value(lap_time_var)
+        lap_number_str = advss_get_variable_value(lap_number_var)
+        run_number_str = advss_get_variable_value(run_number_var)
+        track = advss_get_variable_value(track_var)
+        coins_str = advss_get_variable_value(coins_var)
+        shrooms_str = advss_get_variable_value(shrooms_var)
+
+        # Validate that all required variables exist
+        if lap_time is None:
+            obs.script_log(
+                obs.LOG_WARNING, f"Lap time variable '{lap_time_var}' not found"
+            )
+            return False
+        if lap_number_str is None:
+            obs.script_log(
+                obs.LOG_WARNING, f"Lap number variable '{lap_number_var}' not found"
+            )
+            return False
+        if run_number_str is None:
+            obs.script_log(
+                obs.LOG_WARNING, f"Run number variable '{run_number_var}' not found"
+            )
+            return False
+        if track is None:
+            obs.script_log(obs.LOG_WARNING, f"Track variable '{track_var}' not found")
+            return False
+
+        # Convert string values to appropriate types
+        lap_time = lap_time.strip()
+        lap_number = int(lap_number_str.strip())
+        run_number = int(run_number_str.strip())
+        track = track.strip()
+        coins = int(coins_str.strip()) if coins_str else 0
+        shrooms = int(shrooms_str.strip()) if shrooms_str else 0
 
         _validate_inputs(
             lap_time, lap_number, is_final_lap, run_number, track, coins, shrooms
@@ -908,7 +951,7 @@ def run_action_save_lap(data, instance_id):
 
         csv_path = _csv_file_path(g_base_path)
         if os.path.exists(csv_path) and _test_csv_locked(csv_path):
-            obs.script_log(obs.LOG_WARNING, "CSV is locked; queueing submission")
+            obs.script_log(obs.LOG_INFO, "CSV is locked; queueing submission")
             _add_to_queue(
                 g_base_path,
                 {
@@ -947,13 +990,13 @@ def run_action_save_lap(data, instance_id):
                 g_base_path,
                 {
                     "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "LapTime": obs.obs_data_get_string(data, "lap_time").strip(),
-                    "LapNumber": obs.obs_data_get_int(data, "lap_number"),
-                    "IsFinalLap": obs.obs_data_get_bool(data, "is_final_lap"),
-                    "RunNumber": obs.obs_data_get_int(data, "run_number"),
-                    "Track": obs.obs_data_get_string(data, "track"),
-                    "Coins": obs.obs_data_get_int(data, "coins"),
-                    "Shrooms": obs.obs_data_get_int(data, "shrooms"),
+                    "LapTime": lap_time,
+                    "LapNumber": lap_number,
+                    "IsFinalLap": is_final_lap,
+                    "RunNumber": run_number,
+                    "Track": track,
+                    "Coins": coins,
+                    "Shrooms": shrooms,
                 },
             )
         except Exception as e2:
