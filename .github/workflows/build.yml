@@ -117,6 +117,7 @@ jobs:
           artifacts: wheelhouse/*.whl,bundle_artifacts/*.zip
           allowUpdates: true
           omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
 
   build-sdist:
     name: Build sdist
@@ -146,3 +147,4 @@ jobs:
           artifacts: dist/*.tar.gz
           allowUpdates: true
           omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
