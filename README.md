@@ -97,3 +97,25 @@ alias_to_canonical = {
 ## Contributing
 
 If you find issues or want to add support for additional tracks/OCR variations, feel free to submit a pull request or open an issue.
+
+## Debug logging
+
+If you run into issues with the PowerShell lap saver (`save_lap_time.ps1`) such as queued items not being flushed, enable file logging.
+
+- `-LogToFile`: Turns on logging of all console output
+- `-LogPath <path>`: Optional. Custom path for the log file. If omitted, logs are written to `G:\OBS\Mario Kart World\time trials\logs\save_lap_time_YYYYMMDD_HHmmss.log` by default (based on your `-BasePath`).
+
+Examples:
+
+```powershell
+# Process queued items only with logging
+.\save_lap_time.ps1 -ProcessQueueOnly -LogToFile
+
+# Submit a new lap with logging
+.\save_lap_time.ps1 -LapTime "1:23.456" -LapNumber 1 -IsFinalLap:$false -RunNumber 10 -Track "Mario Circuit" -Coins 2 -Shrooms 0 -LogToFile
+
+# Custom log path
+.\save_lap_time.ps1 -ProcessQueueOnly -LogToFile -LogPath "C:\temp\mk\save_lap_time.log"
+```
+
+Tip: The log includes queue flushing, item-by-item processing, and any errors encountered while writing to Excel. If Excel is open (locked), the script will queue the submission and exit; process the queue later when Excel is closed or run with `-ProcessQueueOnly`.
