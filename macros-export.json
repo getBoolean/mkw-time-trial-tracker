@@ -2295,8 +2295,8 @@
         "dockId": "advss-macro-dock-b74e5e20-1cdc-4269-a8e8-01103cd52dfe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 425 }, { "pos": 247 }],
-      "macroElseActionSplitterPosition": [{ "pos": 215 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 401 }, { "pos": 233 }],
+      "macroElseActionSplitterPosition": [{ "pos": 201 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2520,7 +2520,8 @@
             "track_var": "Current Track",
             "coins_var": "CurrentCoins",
             "shrooms_var": "UsedShrooms",
-            "is_final_lap": false
+            "is_final_lap": false,
+            "enable_auto_image": true
           },
           "duration": {
             "value": { "value": 10.0, "type": 0 },
@@ -2692,8 +2693,8 @@
         "dockId": "advss-macro-dock-514cbc02-a8dc-4abb-973f-c529dbd81b17",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 504 }, { "pos": 168 }],
-      "macroElseActionSplitterPosition": [{ "pos": 136 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 190 }, { "pos": 444 }],
+      "macroElseActionSplitterPosition": [{ "pos": 412 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2861,7 +2862,7 @@
       "actions": [
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -2892,7 +2893,8 @@
             "track_var": "Current Track",
             "coins_var": "CurrentCoins",
             "shrooms_var": "UsedShrooms",
-            "is_final_lap": true
+            "is_final_lap": true,
+            "enable_auto_image": true
           },
           "duration": {
             "value": { "value": 10.0, "type": 0 },
@@ -2978,8 +2980,8 @@
         "dockId": "advss-macro-dock-20ad15a1-6860-42b9-829e-d246e9dfb2fe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 42 }, { "pos": 630 }],
-      "macroElseActionSplitterPosition": [{ "pos": 598 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 40 }, { "pos": 594 }],
+      "macroElseActionSplitterPosition": [{ "pos": 562 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -4141,7 +4143,7 @@
     {
       "name": "Current TT Lap",
       "saveAction": 1,
-      "value": "1",
+      "value": "0",
       "defaultValue": ""
     },
     {
@@ -4153,7 +4155,7 @@
     {
       "name": "Next TT Lap",
       "saveAction": 1,
-      "value": "2",
+      "value": "4",
       "defaultValue": ""
     },
     { "name": "Current Lap OCR", "saveAction": 0, "defaultValue": "" },
@@ -4161,14 +4163,14 @@
     {
       "name": "TT Run Number",
       "saveAction": 1,
-      "value": "98",
+      "value": "118",
       "defaultValue": ""
     },
     { "name": "Current Lap Time OCR", "saveAction": 0, "defaultValue": "" },
     {
       "name": "Current Track",
       "saveAction": 1,
-      "value": "DK Spaceport",
+      "value": "Cheep Cheep Falls",
       "defaultValue": ""
     },
     {
@@ -4187,7 +4189,7 @@
     {
       "name": "Current Track Filename Safe",
       "saveAction": 1,
-      "value": "DK Spaceport",
+      "value": "Cheep Cheep Falls",
       "defaultValue": ""
     },
     {
@@ -4199,7 +4201,7 @@
     {
       "name": "UsedShrooms",
       "saveAction": 1,
-      "value": "0",
+      "value": "3",
       "defaultValue": ""
     },
     {
