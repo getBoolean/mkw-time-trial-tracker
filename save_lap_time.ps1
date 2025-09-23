@@ -18,6 +18,114 @@ param(
     [string]$BasePath = "G:\OBS\Mario Kart World\time trials"
 )
 
+# Queue/lock helpers
+function Get-ExcelFilePath {
+    param([string]$BasePath)
+    return (Join-Path $BasePath "lap_times.xlsx")
+}
+
+function Get-QueueFilePath {
+    param([string]$BasePath)
+    return (Join-Path $BasePath "lap_times_queue.json")
+}
+
+function Test-ExcelLocked {
+    param([string]$ExcelPath)
+    try {
+        if (-not (Test-Path $ExcelPath)) {
+            return $false
+        }
+        $fs = [System.IO.File]::Open($ExcelPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        $fs.Close()
+        return $false
+    }
+    catch {
+        return $true
+    }
+}
+
+function Read-QueueItems {
+    param([string]$BasePath)
+    $queuePath = Get-QueueFilePath -BasePath $BasePath
+    if (-not (Test-Path $queuePath)) { return @() }
+    try {
+        $raw = Get-Content -Path $queuePath -Raw
+        if ([string]::IsNullOrWhiteSpace($raw)) { return @() }
+        $items = $raw | ConvertFrom-Json -ErrorAction Stop
+        if ($items -is [System.Array]) { return @($items) } else { return @($items) }
+    }
+    catch {
+        Write-Warning "Queue file is corrupt. Backing up and clearing: $($_.Exception.Message)"
+        try { Copy-Item -Path $queuePath -Destination ($queuePath + ".bak_" + (Get-Date -Format "yyyyMMddHHmmss")) -Force } catch {}
+        try { Remove-Item -Path $queuePath -Force } catch {}
+        return @()
+    }
+}
+
+function Write-QueueItems {
+    param([string]$BasePath, [array]$Items)
+    $queuePath = Get-QueueFilePath -BasePath $BasePath
+    $Items | ConvertTo-Json -Depth 5 | Set-Content -Path $queuePath -Encoding UTF8
+}
+
+function Add-QueuedSubmission {
+    param(
+        [string]$LapTime,
+        [int]$LapNumber,
+        [bool]$IsFinalLap,
+        [int]$RunNumber,
+        [string]$Track,
+        [string]$BasePath
+    )
+    $items = Read-QueueItems -BasePath $BasePath
+    $submission = [PSCustomObject]@{
+        Timestamp  = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        LapTime    = $LapTime
+        LapNumber  = $LapNumber
+        IsFinalLap = $IsFinalLap
+        RunNumber  = $RunNumber
+        Track      = $Track
+    }
+    $items = @($items) + @($submission)
+    Write-QueueItems -BasePath $BasePath -Items $items
+}
+
+function Invoke-QueuedSubmissions {
+    param([string]$BasePath)
+    $excelFile = Get-ExcelFilePath -BasePath $BasePath
+    if (Test-ExcelLocked -ExcelPath $excelFile) { return }
+    $items = Read-QueueItems -BasePath $BasePath
+    if ($items.Count -eq 0) { return }
+    Write-Host "Flushing queued lap submissions: $($items.Count)" -ForegroundColor Yellow
+    $failed = @()
+    for ($i = 0; $i -lt $items.Count; $i++) {
+        $it = $items[$i]
+        try {
+            Save-LapTimeToExcel -LapTime $it.LapTime -LapNumber $it.LapNumber -IsFinalLap $it.IsFinalLap -RunNumber $it.RunNumber -Track $it.Track -BasePath $BasePath
+        }
+        catch {
+            Write-Warning "Failed to flush a queued item: $($_.Exception.Message)"
+            $failed = $items[$i..($items.Count - 1)]
+            break
+        }
+        if (Test-ExcelLocked -ExcelPath $excelFile) {
+            if ($i -lt ($items.Count - 1)) {
+                $failed = $items[($i + 1)..($items.Count - 1)]
+            }
+            break
+        }
+    }
+    if ($failed.Count -gt 0) {
+        Write-QueueItems -BasePath $BasePath -Items $failed
+        Write-Warning "Some queued items could not be flushed and were kept for next run. Remaining: $($failed.Count)"
+    }
+    else {
+        $queuePath = Get-QueueFilePath -BasePath $BasePath
+        if (Test-Path $queuePath) { Remove-Item -Path $queuePath -Force }
+        Write-Host "All queued items flushed." -ForegroundColor Green
+    }
+}
+
 # Function to ensure ImportExcel module is installed
 function ImportExcelModule {
     try {
@@ -92,7 +200,7 @@ function Save-LapTimeToExcel {
         [string]$BasePath
     )
     
-    $excelFile = Join-Path $BasePath "lap_times.xlsx"
+    $excelFile = Get-ExcelFilePath -BasePath $BasePath
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     
     # Calculate last lap time if this is a final lap
@@ -200,7 +308,19 @@ try {
         exit 1
     }
     
-    # Save to Excel
+    # Handle Excel lock and queue behavior
+    $excelFile = Get-ExcelFilePath -BasePath $BasePath
+    if (Test-ExcelLocked -ExcelPath $excelFile) {
+        Write-Warning "Excel file is currently open/locked. Queuing this lap submission for later."
+        Add-QueuedSubmission -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -BasePath $BasePath
+        Write-Host "Queued submission. It will be added next time the program runs when the file is available." -ForegroundColor Yellow
+        exit 0
+    }
+
+    # Flush any queued items first
+    Invoke-QueuedSubmissions -BasePath $BasePath
+
+    # Save current submission to Excel
     Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -BasePath $BasePath
     
 }
