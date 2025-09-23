@@ -382,7 +382,7 @@ catch {
 }
 
 # Usage examples:
-# .\save_lap_time.ps1 -LapTime "1:23.456" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit"
-# .\save_lap_time.ps1 -LapTime "1:20.123" -LapNumber 2 -IsFinalLap $true -RunNumber 1 -Track "Mario Circuit"
-# .\save_lap_time.ps1 -LapTime "1:18.789" -LapNumber 1 -IsFinalLap $false -RunNumber 2 -Track "Rainbow Road"
-# .\save_lap_time.ps1 -LapTime "1:15.234" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit" -BasePath "C:\MyTimeTrials"
+# .\save_lap_time.ps1 -LapTime "1:23.456" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit" -Coins 2 -Shrooms 0
+# .\save_lap_time.ps1 -LapTime "1:20.123" -LapNumber 2 -IsFinalLap $true -RunNumber 1 -Track "Mario Circuit" -Coins 5 -Shrooms 1
+# .\save_lap_time.ps1 -LapTime "1:18.789" -LapNumber 1 -IsFinalLap $false -RunNumber 2 -Track "Rainbow Road" -Coins 0 -Shrooms 0
+# .\save_lap_time.ps1 -LapTime "1:15.234" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit" -BasePath "C:\MyTimeTrials" -Coins 3 -Shrooms 2
