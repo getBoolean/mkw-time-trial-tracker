@@ -28,6 +28,37 @@ g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
 g_repo_path = ""
 g_lap_times_scale = 3.0  # Fixed scale factor for lap times box size
 
+# Supported resolution configurations with hardcoded values
+SUPPORTED_RESOLUTIONS = {
+    "1080p": {
+        "width": 1920,
+        "height": 1080,
+        "font_size": 16,
+        "char_spacing": 13,
+        "base_padding": 5,
+        "line_spacing": 30,
+        "margin": 30,
+    },
+    "1440p": {
+        "width": 2560,
+        "height": 1440,
+        "font_size": 18,
+        "char_spacing": 21,
+        "base_padding": 7,
+        "line_spacing": 33,
+        "margin": 60,
+    },
+    "2160p": {
+        "width": 3840,
+        "height": 2160,
+        "font_size": 24,
+        "char_spacing": 27,
+        "base_padding": 10,
+        "line_spacing": 50,
+        "margin": 80,
+    },
+}
+
 # Optional fast C extension
 try:
     import lapimg  # type: ignore
@@ -305,6 +336,15 @@ def script_update(settings):
 
 def script_load(settings):
     global action_name
+    obs.script_log(obs.LOG_INFO, "=== SCRIPT LOAD DEBUG ===")
+    obs.script_log(
+        obs.LOG_INFO,
+        f"SUPPORTED_RESOLUTIONS during script load: {SUPPORTED_RESOLUTIONS}",
+    )
+    obs.script_log(
+        obs.LOG_INFO, f"g_lap_times_scale during script load: {g_lap_times_scale}"
+    )
+    obs.script_log(obs.LOG_INFO, "=== END SCRIPT LOAD DEBUG ===")
     advss_register_action(
         action_name,
         run_action,
@@ -707,6 +747,106 @@ def _convert_seconds_to_laptime(seconds_val):
     return f"{minutes}:{remaining:06.3f}"
 
 
+def _get_closest_supported_resolution(width, height):
+    """Determine the closest supported resolution for given dimensions.
+
+    Returns tuple of (resolution_name, config_dict)
+    """
+    obs.script_log(obs.LOG_INFO, "=== RESOLUTION DETECTION DEBUG ===")
+    obs.script_log(obs.LOG_INFO, f"Input dimensions: {width}x{height}")
+    obs.script_log(
+        obs.LOG_INFO, f"Available resolutions: {list(SUPPORTED_RESOLUTIONS.keys())}"
+    )
+
+    current_aspect_ratio = width / height if height > 0 else 16 / 9
+    obs.script_log(obs.LOG_INFO, f"Input aspect ratio: {current_aspect_ratio:.3f}")
+
+    best_match = None
+    best_distance = float("inf")
+
+    for res_name, config in SUPPORTED_RESOLUTIONS.items():
+        target_aspect_ratio = config["width"] / config["height"]
+        # Calculate distance considering both size and aspect ratio
+        size_distance = abs((config["width"] * config["height"]) - (width * height))
+        aspect_distance = (
+            abs(target_aspect_ratio - current_aspect_ratio) * 1000000
+        )  # Weight aspect ratio heavily
+        total_distance = size_distance + aspect_distance
+
+        obs.script_log(
+            obs.LOG_INFO,
+            f"  {res_name}: {config['width']}x{config['height']}, aspect={target_aspect_ratio:.3f}, size_dist={size_distance}, aspect_dist={aspect_distance:.0f}, total={total_distance:.0f}",
+        )
+
+        if total_distance < best_distance:
+            best_distance = total_distance
+            best_match = (res_name, config)
+
+    obs.script_log(obs.LOG_INFO, f"SELECTED: {best_match[0]} -> {best_match[1]}")
+    obs.script_log(obs.LOG_INFO, "=== END RESOLUTION DETECTION ===")
+    return best_match
+
+
+def _resize_image_pixels(pixels, old_width, old_height, new_width, new_height):
+    """Resize image using simple nearest neighbor interpolation.
+
+    Args:
+        pixels: List of bytes rows (RGB format)
+        old_width, old_height: Original dimensions
+        new_width, new_height: Target dimensions
+
+    Returns:
+        List of bytes rows at new size
+    """
+    if old_width == new_width and old_height == new_height:
+        return pixels
+
+    try:
+        # Try fast C extension first if available
+        if lapimg is not None and hasattr(lapimg, "resize_image_rgb"):
+            # Convert pixels to contiguous bytes
+            rgb_data = b"".join(pixels)
+            resized_rgb = lapimg.resize_image_rgb(
+                rgb_data, old_width, old_height, new_width, new_height
+            )
+            # Convert back to list of row bytes
+            row_bytes = new_width * 3
+            return [
+                bytes(resized_rgb[i * row_bytes : (i + 1) * row_bytes])
+                for i in range(new_height)
+            ]
+    except Exception as e:
+        obs.script_log(
+            obs.LOG_WARNING, f"C extension resize failed: {e}, falling back to Python"
+        )
+
+    # Python fallback - simple nearest neighbor
+    new_pixels = []
+    x_ratio = old_width / new_width
+    y_ratio = old_height / new_height
+
+    for new_y in range(new_height):
+        old_y = min(int(new_y * y_ratio), old_height - 1)
+        old_row = pixels[old_y]
+        new_row = bytearray()
+
+        for new_x in range(new_width):
+            old_x = min(int(new_x * x_ratio), old_width - 1)
+            pixel_offset = old_x * 3
+            if pixel_offset + 2 < len(old_row):
+                new_row.extend(old_row[pixel_offset : pixel_offset + 3])
+            else:
+                new_row.extend([0, 0, 0])  # Black pixel fallback
+
+        new_pixels.append(bytes(new_row))
+
+    obs.script_log(
+        obs.LOG_INFO,
+        f"Resized image from {old_width}x{old_height} to {new_width}x{new_height} using Python",
+    )
+    return new_pixels
+
+
 def _validate_inputs(
     lap_time, lap_number, is_final_lap, run_number, track, coins, shrooms
 ):
@@ -966,6 +1106,15 @@ def _get_last_final_lap(base_path):
 def _on_create_last_image_button(props, prop):
     def worker():
         try:
+            # Add debug logging
+            obs.script_log(obs.LOG_INFO, "=== CREATE LAST IMAGE DEBUG ===")
+            obs.script_log(
+                obs.LOG_INFO, f"Current SUPPORTED_RESOLUTIONS: {SUPPORTED_RESOLUTIONS}"
+            )
+            obs.script_log(
+                obs.LOG_INFO, f"Current g_lap_times_scale: {g_lap_times_scale}"
+            )
+
             last_final_lap = _get_last_final_lap(g_base_path)
             if last_final_lap is None:
                 obs.script_log(obs.LOG_WARNING, "No final lap found in CSV data")
@@ -2261,6 +2410,15 @@ def _find_screenshot_for_run(base_path, run_number):
 
 def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
     """Create lap times image using fast C extension when available, else Python."""
+    obs.script_log(obs.LOG_INFO, "=== CREATE LAP TIMES IMAGE STARTED ===")
+    obs.script_log(
+        obs.LOG_INFO,
+        f"run_number={run_number}, final_screenshot_path={final_screenshot_path}",
+    )
+    obs.script_log(
+        obs.LOG_INFO,
+        f"SUPPORTED_RESOLUTIONS keys: {list(SUPPORTED_RESOLUTIONS.keys())}",
+    )
     try:
         # Try to find and extract run number from screenshot first
         screenshot_path = final_screenshot_path
@@ -2319,37 +2477,86 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     f"Failed to load screenshot {os.path.basename(screenshot_path)}, using default background",
                 )
 
-        # Set image dimensions
+        # Determine target resolution and resize if needed
+        input_width = bg_width if background_pixels and bg_width > 0 else 3840
+        input_height = bg_height if background_pixels and bg_height > 0 else 2160
+
+        # Get closest supported resolution
+        target_res_name, target_res_config = _get_closest_supported_resolution(
+            input_width, input_height
+        )
+        target_width = target_res_config["width"]
+        target_height = target_res_config["height"]
+
+        # Resize background if needed
         if background_pixels and bg_width > 0 and bg_height > 0:
-            width, height = bg_width, bg_height
+            if bg_width != target_width or bg_height != target_height:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Resizing background from {bg_width}x{bg_height} to {target_width}x{target_height} ({target_res_name})",
+                )
+                background_pixels = _resize_image_pixels(
+                    background_pixels, bg_width, bg_height, target_width, target_height
+                )
+            else:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Background already at target resolution {target_width}x{target_height} ({target_res_name})",
+                )
+        else:
             obs.script_log(
                 obs.LOG_INFO,
-                f"Successfully loaded screenshot background ({width}x{height})",
+                f"Using default background at {target_width}x{target_height} ({target_res_name})",
             )
-        else:
-            # Fallback to default size with dark background
-            width, height = 3840, 2160
-            obs.script_log(obs.LOG_INFO, f"Using default background ({width}x{height})")
+
+        # Set final dimensions
+        width, height = target_width, target_height
 
         # Draw semi-transparent background for text area
         # Position text in bottom-right corner for better visibility
         # Make size and position relative to image dimensions for consistency
 
-        # Base dimensions on image size (roughly 25% of width, auto height) scaled by user setting
-        base_width = max(400, int(width * 0.25))  # At least 400px, or 25% of width
-        text_area_width = int(base_width * g_lap_times_scale)
+        # Use hardcoded resolution-specific values, optionally scaled by user preference
+        obs.script_log(obs.LOG_INFO, "=== TEXT SCALING DEBUG ===")
+        obs.script_log(obs.LOG_INFO, f"Target resolution config: {target_res_config}")
+        obs.script_log(obs.LOG_INFO, f"g_lap_times_scale: {g_lap_times_scale}")
+
+        font_size = target_res_config["font_size"]
+        char_spacing = target_res_config["char_spacing"]
+        base_padding = target_res_config["base_padding"]
+        line_spacing = target_res_config["line_spacing"]
+        margin = target_res_config["margin"]
+
         obs.script_log(
             obs.LOG_INFO,
-            f"Lap times overlay: {text_area_width}px box, {int(8 * g_lap_times_scale * 3)}px font",
+            f"Base values: font={font_size}, char_spacing={char_spacing}, padding={base_padding}, line_spacing={line_spacing}, margin={margin}",
         )
 
-        # Calculate spacing and padding relative to image size
-        base_padding = max(20, int(height * 0.02 * g_lap_times_scale))
-        line_spacing = max(25, int(height * 0.025 * g_lap_times_scale))
+        # Apply user scaling if desired (g_lap_times_scale still available for fine-tuning)
+        if g_lap_times_scale != 1.0:
+            obs.script_log(
+                obs.LOG_INFO, f"Applying user scaling factor: {g_lap_times_scale}"
+            )
+            font_size = int(font_size * g_lap_times_scale)
+            char_spacing = int(char_spacing * g_lap_times_scale)
+            base_padding = int(base_padding * g_lap_times_scale)
+            line_spacing = int(line_spacing * g_lap_times_scale)
+            margin = int(margin * g_lap_times_scale)
 
-        # Position in top-left corner with 2% margin from edges
-        margin_x = max(20, int(width * 0.02 * g_lap_times_scale))
-        margin_y = max(20, int(height * 0.02 * g_lap_times_scale))
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Final values: font={font_size}, char_spacing={char_spacing}, padding={base_padding}, line_spacing={line_spacing}, margin={margin}",
+        )
+        obs.script_log(obs.LOG_INFO, "=== END TEXT SCALING DEBUG ===")
+
+        obs.script_log(
+            obs.LOG_INFO,
+            f"Lap times overlay ({target_res_name}): font={font_size}px, padding={base_padding}px, spacing={line_spacing}px",
+        )
+
+        # Position in top-left corner with resolution-appropriate margin
+        margin_x = margin
+        margin_y = margin
         text_x = margin_x
         text_y = margin_y
 
@@ -2374,14 +2581,27 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             )
             # Compose whole image in C fast path (solid bg)
             texts = []
+            # Convert font_size to scale factor for C extension (C extension expects scale, not pixel size)
+            c_scale = max(
+                1, font_size // 24
+            )  # 24px is base size (8*3), so scale accordingly
+            obs.script_log(obs.LOG_INFO, "=== C EXTENSION TEXT DEBUG ===")
+            obs.script_log(
+                obs.LOG_INFO,
+                f"font_size={font_size}, c_scale={c_scale}, base_padding={base_padding}",
+            )
+            obs.script_log(
+                obs.LOG_INFO,
+                f"text_x={text_x}, current_y={current_y}, line_spacing={line_spacing}",
+            )
             texts.append(
                 (
                     text_x + base_padding,
                     current_y,
                     f"Track: {track_from_csv[:50]}",
                     (255, 255, 255),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2395,8 +2615,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                         current_y,
                         lap_text[:50],
                         color,
-                        int(g_lap_times_scale),
-                        int(8 * g_lap_times_scale),
+                        c_scale,
+                        base_padding,
                         (0, 0, 0, 220),
                     )
                 )
@@ -2408,8 +2628,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     current_y,
                     f"Total: {total_time_str}",
                     (100, 255, 100),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2440,14 +2660,27 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                 )
             # Prepare overlay texts
             texts = []
+            # Convert font_size to scale factor for C extension (C extension expects scale, not pixel size)
+            c_scale = max(
+                1, font_size // 24
+            )  # 24px is base size (8*3), so scale accordingly
+            obs.script_log(obs.LOG_INFO, "=== OVERLAY TEXT DEBUG ===")
+            obs.script_log(
+                obs.LOG_INFO,
+                f"font_size={font_size}, c_scale={c_scale}, base_padding={base_padding}",
+            )
+            obs.script_log(
+                obs.LOG_INFO,
+                f"text_x={text_x}, current_y={current_y}, line_spacing={line_spacing}",
+            )
             texts.append(
                 (
                     text_x + base_padding,
                     current_y,
                     f"Track: {track_from_csv[:50]}",
                     (255, 255, 255),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2461,8 +2694,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                         current_y,
                         lap_text[:50],
                         color,
-                        int(g_lap_times_scale),
-                        int(8 * g_lap_times_scale),
+                        c_scale,
+                        base_padding,
                         (0, 0, 0, 220),
                     )
                 )
@@ -2474,8 +2707,8 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     current_y,
                     f"Total: {total_time_str}",
                     (100, 255, 100),
-                    int(g_lap_times_scale),
-                    int(8 * g_lap_times_scale),
+                    c_scale,
+                    base_padding,
                     (0, 0, 0, 220),
                 )
             )
@@ -2501,19 +2734,32 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                     pixels = background_pixels
                 else:
                     pixels = _create_png_image(width, height, bg_color=(30, 30, 30))
-                # Draw using Python
+                # Draw using Python - convert from C extension format to Python format
+                obs.script_log(obs.LOG_INFO, "=== PYTHON FALLBACK TEXT DEBUG ===")
+                obs.script_log(
+                    obs.LOG_INFO, f"font_size={font_size}, texts count={len(texts)}"
+                )
                 for entry in texts:
+                    # entry format: (x, y, text, color, scale, padding, bg_color)
+                    # _draw_text_with_background expects: (pixels, width, height, x, y, text, text_color, bg_color, scale, padding)
+                    python_scale = (
+                        font_size / 24.0
+                    )  # Convert pixel size back to scale for Python renderer
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"  Drawing text: '{entry[2]}' at ({entry[0]}, {entry[1]}) with python_scale={python_scale:.2f}",
+                    )
                     _draw_text_with_background(
                         pixels,
                         width,
                         height,
-                        entry[0],
-                        entry[1],
-                        entry[2],
-                        entry[3],
-                        entry[6],
-                        entry[4],
-                        entry[5],
+                        entry[0],  # x
+                        entry[1],  # y
+                        entry[2],  # text
+                        entry[3],  # text_color
+                        entry[6],  # bg_color (RGBA)
+                        python_scale,  # scale
+                        entry[5],  # padding
                     )
 
         # Generate output filename
