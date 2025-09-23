@@ -1,17 +1,17 @@
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [string]$LapTime,
     
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [int]$LapNumber,
     
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [bool]$IsFinalLap,
     
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [int]$RunNumber,
     
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [string]$Track,
     
     [Parameter(Mandatory = $false)]
@@ -21,7 +21,16 @@ param(
     [int]$Shrooms = 0,
     
     [Parameter(Mandatory = $false)]
-    [string]$BasePath = "G:\OBS\Mario Kart World\time trials"
+    [string]$BasePath = "G:\OBS\Mario Kart World\time trials",
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$ProcessQueueOnly,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$LogToFile,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$LogPath
 )
 
 # Queue/lock helpers
@@ -58,7 +67,9 @@ function Read-QueueItems {
         $raw = Get-Content -Path $queuePath -Raw
         if ([string]::IsNullOrWhiteSpace($raw)) { return @() }
         $items = $raw | ConvertFrom-Json -ErrorAction Stop
-        if ($items -is [System.Array]) { return @($items) } else { return @($items) }
+        if ($null -eq $items) { return @() }
+        # Always normalize to an array, even for a single PSCustomObject
+        return @($items)
     }
     catch {
         Write-Warning "Queue file is corrupt. Backing up and clearing: $($_.Exception.Message)"
@@ -88,7 +99,8 @@ function Add-QueuedSubmission {
     $items = Read-QueueItems -BasePath $BasePath
     $submission = [PSCustomObject]@{
         Timestamp  = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        LapTime    = $LapTime
+        # Ensure no stray newline/whitespace is kept in queued LapTime
+        LapTime    = if ($null -ne $LapTime) { $LapTime.Trim() } else { $LapTime }
         LapNumber  = $LapNumber
         IsFinalLap = $IsFinalLap
         RunNumber  = $RunNumber
@@ -103,20 +115,36 @@ function Add-QueuedSubmission {
 function Invoke-QueuedSubmissions {
     param([string]$BasePath)
     $excelFile = Get-ExcelFilePath -BasePath $BasePath
-    if (Test-ExcelLocked -ExcelPath $excelFile) { return }
+    Write-Host "Checking Excel lock status for queue processing..." -ForegroundColor Cyan
+    if (Test-ExcelLocked -ExcelPath $excelFile) { 
+        Write-Host "Excel file is locked, skipping queue processing" -ForegroundColor Red
+        return 
+    }
+    Write-Host "Excel file is available for queue processing" -ForegroundColor Green
     $items = Read-QueueItems -BasePath $BasePath
-    if ($items.Count -eq 0) { return }
-    Write-Host "Flushing queued lap submissions: $($items.Count)" -ForegroundColor Yellow
+    # Normalize again here for double safety
+    $items = @($items)
+    $queuedCount = $items.Count
+    if ($queuedCount -eq 0) { 
+        Write-Host "No queued items found" -ForegroundColor Yellow
+        return 
+    }
+    Write-Host "Flushing queued lap submissions: $queuedCount" -ForegroundColor Yellow
     $failed = @()
-    for ($i = 0; $i -lt $items.Count; $i++) {
+    for ($i = 0; $i -lt $queuedCount; $i++) {
         $it = $items[$i]
         try {
             $queuedCoins = if ($it.PSObject.Properties.Name -contains 'Coins' -and $null -ne $it.Coins) { [int]$it.Coins } else { 0 }
             $queuedShrooms = if ($it.PSObject.Properties.Name -contains 'Shrooms' -and $null -ne $it.Shrooms) { [int]$it.Shrooms } else { 0 }
-            Save-LapTimeToExcel -LapTime $it.LapTime -LapNumber $it.LapNumber -IsFinalLap $it.IsFinalLap -RunNumber $it.RunNumber -Track $it.Track -Coins $queuedCoins -Shrooms $queuedShrooms -BasePath $BasePath
+            # Sanitize LapTime coming from queue (could include a trailing \n)
+            $queuedLapTime = ("$($it.LapTime)").Trim()
+            Write-Host "Processing queued item: Run $($it.RunNumber), Lap $($it.LapNumber), Time $queuedLapTime" -ForegroundColor Magenta
+            Save-LapTimeToExcel -LapTime $queuedLapTime -LapNumber $it.LapNumber -IsFinalLap $it.IsFinalLap -RunNumber $it.RunNumber -Track $it.Track -Coins $queuedCoins -Shrooms $queuedShrooms -BasePath $BasePath
+            Write-Host "Successfully processed queued item: Run $($it.RunNumber)" -ForegroundColor Green
         }
         catch {
             Write-Warning "Failed to flush a queued item: $($_.Exception.Message)"
+            Write-Warning "Error details: $($_.Exception)"
             $failed = $items[$i..($items.Count - 1)]
             break
         }
@@ -183,6 +211,8 @@ function Test-LapTimeFormat {
 function Convert-LapTimeToSeconds {
     param([string]$TimeString)
     
+    # Normalize any stray whitespace or newlines from OCR/queue
+    if ($null -ne $TimeString) { $TimeString = $TimeString.Trim() }
     $parts = $TimeString -split ':'
     $minutes = [int]$parts[0]
     $seconds = [double]$parts[1]
@@ -315,14 +345,63 @@ function Save-LapTimeToExcel {
     }
     catch {
         Write-Error "Failed to save lap time: $($_.Exception.Message)"
-        exit 1
+        throw $_.Exception
     }
 }
 
 # Main execution
 try {
+    # Configure logging to file if requested
+    $transcriptStarted = $false
+    if ($LogToFile) {
+        try {
+            if ([string]::IsNullOrWhiteSpace($LogPath)) {
+                $logDir = Join-Path $BasePath "logs"
+                if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
+                $LogPath = Join-Path $logDir ("save_lap_time_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".log")
+            }
+            else {
+                $logParent = Split-Path -Path $LogPath -Parent
+                if ($logParent -and -not (Test-Path $logParent)) { New-Item -ItemType Directory -Path $logParent -Force | Out-Null }
+            }
+            Start-Transcript -Path $LogPath -Append | Out-Null
+            $transcriptStarted = $true
+            Write-Host "Logging to: $LogPath" -ForegroundColor Yellow
+        }
+        catch { Write-Warning "Failed to start transcript logging: $($_.Exception.Message)" }
+    }
     # Ensure ImportExcel module is available
     ImportExcelModule
+    
+    # If ProcessQueueOnly is specified, just process the queue and exit
+    if ($ProcessQueueOnly) {
+        Write-Host "Processing queued submissions only..." -ForegroundColor Yellow
+        Invoke-QueuedSubmissions -BasePath $BasePath
+        if ($transcriptStarted) { try { Stop-Transcript | Out-Null } catch {} }
+        exit 0
+    }
+    
+    # Validate required parameters when not processing queue only
+    if ([string]::IsNullOrWhiteSpace($LapTime)) {
+        Write-Error "LapTime parameter is required when not using ProcessQueueOnly"
+        exit 1
+    }
+    if (-not $LapNumber) {
+        Write-Error "LapNumber parameter is required when not using ProcessQueueOnly"
+        exit 1
+    }
+    if (-not $PSBoundParameters.ContainsKey('IsFinalLap')) {
+        Write-Error "IsFinalLap parameter is required when not using ProcessQueueOnly"
+        exit 1
+    }
+    if (-not $RunNumber) {
+        Write-Error "RunNumber parameter is required when not using ProcessQueueOnly"
+        exit 1
+    }
+    if ([string]::IsNullOrWhiteSpace($Track)) {
+        Write-Error "Track parameter is required when not using ProcessQueueOnly"
+        exit 1
+    }
     
     # Validate lap time format
     if (-not (Test-LapTimeFormat -TimeString $LapTime)) {
@@ -375,6 +454,8 @@ try {
         Write-Warning "Excel file is currently open/locked. Queuing this lap submission for later."
         Add-QueuedSubmission -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $coinsInt -Shrooms $Shrooms -BasePath $BasePath
         Write-Host "Queued submission. It will be added next time the program runs when the file is available." -ForegroundColor Yellow
+        Write-Host "Note: Existing queued items will be processed when Excel becomes available." -ForegroundColor Cyan
+        if ($transcriptStarted) { try { Stop-Transcript | Out-Null } catch {} }
         exit 0
     }
 
@@ -389,9 +470,13 @@ catch {
     Write-Error "An error occurred: $($_.Exception.Message)"
     exit 1
 }
+finally {
+    if ($transcriptStarted) { try { Stop-Transcript | Out-Null } catch {} }
+}
 
 # Usage examples:
 # .\save_lap_time.ps1 -LapTime "1:23.456" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit" -Coins 2 -Shrooms 0
 # .\save_lap_time.ps1 -LapTime "1:20.123" -LapNumber 2 -IsFinalLap $true -RunNumber 1 -Track "Mario Circuit" -Coins 5 -Shrooms 1
 # .\save_lap_time.ps1 -LapTime "1:18.789" -LapNumber 1 -IsFinalLap $false -RunNumber 2 -Track "Rainbow Road" -Coins 0 -Shrooms 0
 # .\save_lap_time.ps1 -LapTime "1:15.234" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit" -BasePath "C:\MyTimeTrials" -Coins 3 -Shrooms 2
+# .\save_lap_time.ps1 -ProcessQueueOnly -BasePath "G:\OBS\Mario Kart World\time trials"  # Process queued items only
