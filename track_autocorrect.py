@@ -4,7 +4,7 @@ import obspython as obs
 import threading
 from typing import NamedTuple
 
-action_name = "MLWorld Track Auto-Correct"
+action_name = "MKW Track"
 
 
 ###############################################################################
@@ -13,10 +13,19 @@ action_name = "MLWorld Track Auto-Correct"
 
 
 def run_action(data, instance_id):
-    ocr_text = obs.obs_data_get_string(data, "ocr_text")
+    ocr_text_variable = obs.obs_data_get_string(data, "ocr_text")
+    ocr_text = advss_get_variable_value(ocr_text_variable)
+    if ocr_text is None:
+        obs.script_log(obs.LOG_WARNING, "OCR text variable not found")
+        return
+    ocr_text = ocr_text.strip()
     identified_track = find_closest_track(ocr_text)
-    obs.script_log(obs.LOG_WARNING, identified_track)
-    advss_set_variable_value("IdentifiedTrack", identified_track)
+
+    obs.script_log(
+        obs.LOG_WARNING,
+        "OCR text: " + ocr_text + " - Identified track: " + identified_track,
+    )
+    advss_set_temp_var_value("identified_track", ocr_text, instance_id)
 
 
 def find_closest_track(ocr_text):
@@ -25,14 +34,24 @@ def find_closest_track(ocr_text):
 
 def get_action_properties():
     props = obs.obs_properties_create()
-    obs.obs_properties_add_text(props, "ocr_text", "OCR Text", obs.OBS_TEXT_DEFAULT)
+    obs.obs_properties_add_text(
+        props, "ocr_text", "OCR Text Variable Name", obs.OBS_TEXT_DEFAULT
+    )
     return props
 
 
 def get_action_defaults():
     default_settings = obs.obs_data_create()
-    obs.obs_data_set_default_string(default_settings, "ocr_text", "OCR text")
+    obs.obs_data_set_default_string(default_settings, "ocr_text", "Current Track OCR")
     return default_settings
+
+
+def get_action_macro_properties():
+    return [
+        MacroProperty(
+            "identified_track", "Identified Track", "Identified Track for MKW"
+        )
+    ]
 
 
 ###############################################################################
@@ -56,6 +75,7 @@ def script_load(settings):
         run_action,
         get_action_properties,
         get_action_defaults(),
+        get_action_macro_properties(),
     )
 
 
