@@ -2518,9 +2518,7 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
 
         # Generate output filename
         safe_track = make_filesystem_safe(track_from_csv)
-        output_filename = (
-            f"Splits_{safe_track}_Run-{actual_run_number}.png"
-        )
+        output_filename = f"Splits_{safe_track}_Run-{actual_run_number}.png"
         output_path = os.path.join(base_path, output_filename)
 
         # Save the image (prefer fast C saver)
