@@ -1078,6 +1078,7 @@ def _flush_queue(base_path):
             track = it.get("Track", "")
             coins = int(it.get("Coins", 0))
             shrooms = int(it.get("Shrooms", 0))
+            enable_auto_image = bool(it.get("EnableAutoImage", True))
 
             _save_lap_to_csv(
                 base_path,
@@ -1090,8 +1091,8 @@ def _flush_queue(base_path):
                 shrooms,
             )
 
-            # If this is the final lap from queue, create the lap times image
-            if is_final_lap:
+            # If this is the final lap from queue, create the lap times image (if enabled)
+            if is_final_lap and enable_auto_image:
                 try:
                     _create_lap_times_image(base_path, run_number)
                 except Exception as e:
@@ -3012,6 +3013,9 @@ def get_save_action_properties():
         props, "shrooms_var", "Shrooms Variable Name", obs.OBS_TEXT_DEFAULT
     )
     obs.obs_properties_add_bool(props, "is_final_lap", "Is Final Lap")
+    obs.obs_properties_add_bool(
+        props, "enable_auto_image", "Create Split Image after Final Lap"
+    )
     return props
 
 
@@ -3024,6 +3028,7 @@ def get_save_action_defaults():
     obs.obs_data_set_default_string(defaults, "coins_var", "CurrentCoins")
     obs.obs_data_set_default_string(defaults, "shrooms_var", "UsedShrooms")
     obs.obs_data_set_default_bool(defaults, "is_final_lap", False)
+    obs.obs_data_set_default_bool(defaults, "enable_auto_image", True)
     return defaults
 
 
@@ -3037,6 +3042,7 @@ def run_action_save_lap(data, instance_id):
         coins_var = obs.obs_data_get_string(data, "coins_var")
         shrooms_var = obs.obs_data_get_string(data, "shrooms_var")
         is_final_lap = obs.obs_data_get_bool(data, "is_final_lap")
+        enable_auto_image = obs.obs_data_get_bool(data, "enable_auto_image")
 
         # Get values from variables
         lap_time = advss_get_variable_value(lap_time_var)
@@ -3098,6 +3104,7 @@ def run_action_save_lap(data, instance_id):
                     "Track": track,
                     "Coins": int(coins),
                     "Shrooms": int(shrooms),
+                    "EnableAutoImage": bool(enable_auto_image),
                 },
             )
             return True
@@ -3117,8 +3124,8 @@ def run_action_save_lap(data, instance_id):
             shrooms,
         )
 
-        # If this is the final lap, create the lap times image
-        if is_final_lap:
+        # If this is the final lap, create the lap times image (if enabled)
+        if is_final_lap and enable_auto_image:
             try:
                 _create_lap_times_image(g_base_path, run_number)
             except Exception as e:
@@ -3148,6 +3155,7 @@ def run_action_save_lap(data, instance_id):
                     "Track": track,
                     "Coins": coins,
                     "Shrooms": shrooms,
+                    "EnableAutoImage": enable_auto_image,
                 },
             )
         except Exception as e2:
