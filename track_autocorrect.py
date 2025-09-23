@@ -20,16 +20,146 @@ def run_action(data, instance_id):
         return
     ocr_text = ocr_text.strip()
     identified_track = find_closest_track(ocr_text)
+    if identified_track is None:
+        obs.script_log(obs.LOG_WARNING, "No track found for OCR text: " + ocr_text)
+        return
 
     obs.script_log(
-        obs.LOG_WARNING,
+        obs.LOG_VERBOSE,
         "OCR text: " + ocr_text + " - Identified track: " + identified_track,
     )
     advss_set_temp_var_value("identified_track", ocr_text, instance_id)
 
 
 def find_closest_track(ocr_text):
-    return "Test Track"
+    # Normalize helper
+    def _normalize(name: str) -> str:
+        s = name.lower()
+        replacers = {
+            "'": "",
+            "’": "",
+            "?": "question",
+            "-": " ",
+            ",": " ",
+            ".": " ",
+            "&": " and ",
+        }
+        for k, v in replacers.items():
+            s = s.replace(k, v)
+        # Collapse whitespace
+        s = " ".join(s.split())
+        return s
+
+    # Canonical track list (unique, deduped)
+    tracks = [
+        "Mario Bros. Circuit",
+        "Crown City",
+        "Whistlestop Summit",
+        "DK Spaceport",
+        "Desert Hills",
+        "Shy Guy Bazaar",
+        "Wario Stadium",
+        "Airship Fortress",
+        "DK Pass",
+        "Starview Peak",
+        "Sky-High Sundae",
+        "Wario Shipyard",
+        "Koopa Troopa Beach",
+        "Faraway Oasis",
+        "Peach Stadium",
+        "Peach Beach",
+        "Salty Salty Speedway",
+        "Dino Dino Jungle",
+        "Great ? Block Ruins",
+        "Cheep Cheep Falls",
+        "Dandelion Depths",
+        "Boo Cinema",
+        "Dry Bones Burnout",
+        "Moo Moo Meadows",
+        "Choco Mountain",
+        "Toad's Factory",
+        "Bowser's Castle",
+        "Acorn Heights",
+        "Mario Circuit",
+        "Rainbow Road",
+    ]
+
+    # Regional/alias mappings -> canonical
+    alias_to_canonical = {
+        # Wario Shipyard
+        "warios galleon": "Wario Shipyard",
+        "wario galleon": "Wario Shipyard",
+        "warios shipyard": "Wario Shipyard",
+        # Great ? Block Ruins
+        "great question block ruins": "Great ? Block Ruins",
+        "great block ruins": "Great ? Block Ruins",
+        # Sky-High Sundae
+        "sky high sundae": "Sky-High Sundae",
+        # Toad's Factory
+        "toads factory": "Toad's Factory",
+        # Cheep Cheep Falls common OCR
+        "cheap cheap falls": "Cheep Cheep Falls",
+        "cheep-cheep falls": "Cheep Cheep Falls",
+        # Moo Moo Meadows
+        "moomoo meadows": "Moo Moo Meadows",
+        # Mario Circuit variants
+        "mario bros circuit": "Mario Bros. Circuit",
+        "mario brothers circuit": "Mario Bros. Circuit",
+        # Peach Stadium
+        "peach stadium": "Peach Stadium",
+        # Bowser's Castle
+        "bowsers castle": "Bowser's Castle",
+        # Koopa Troopa Beach
+        "koopa beach": "Koopa Troopa Beach",
+        # DK prefixed
+        "donkey kong spaceport": "DK Spaceport",
+        "donkey kong pass": "DK Pass",
+        # Shy Guy Bazaar
+        "shyguy bazaar": "Shy Guy Bazaar",
+        # Wario Stadium
+        "wariostadium": "Wario Stadium",
+    }
+
+    # Precompute normalized names
+    normalized_to_canonical = {}
+    for t in tracks:
+        normalized_to_canonical[_normalize(t)] = t
+
+    # Try direct/alias resolution first
+    norm_ocr = _normalize(ocr_text)
+    if norm_ocr in normalized_to_canonical:
+        return normalized_to_canonical[norm_ocr]
+    if norm_ocr in alias_to_canonical:
+        return alias_to_canonical[norm_ocr]
+
+    # Try contains-based alias (for partial OCRs)
+    for alias, canon in alias_to_canonical.items():
+        if alias in norm_ocr:
+            return canon
+
+    # Fallback: fuzzy match using difflib
+    import difflib
+
+    best_match = None
+    best_score = -1.0
+    for norm_name, canon in normalized_to_canonical.items():
+        score = difflib.SequenceMatcher(None, norm_ocr, norm_name).ratio()
+        # Token sort partial similarity to be more robust
+        if score < 0.92:
+            tokens_ocr = sorted(norm_ocr.split())
+            tokens_name = sorted(norm_name.split())
+            token_score = difflib.SequenceMatcher(
+                None, " ".join(tokens_ocr), " ".join(tokens_name)
+            ).ratio()
+            score = max(score, token_score)
+        if score > best_score:
+            best_score = score
+            best_match = canon
+
+    # If score is very low, just return the original text to avoid wrong mapping
+    if best_score < 0.6 or best_match is None:
+        return None
+    return best_match
 
 
 def get_action_properties():
