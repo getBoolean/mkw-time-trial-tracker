@@ -15,6 +15,12 @@ param(
     [string]$Track,
     
     [Parameter(Mandatory = $false)]
+    [int]$Coins = 0,
+    
+    [Parameter(Mandatory = $false)]
+    [int]$Shrooms = 0,
+    
+    [Parameter(Mandatory = $false)]
     [string]$BasePath = "G:\OBS\Mario Kart World\time trials"
 )
 
@@ -75,6 +81,8 @@ function Add-QueuedSubmission {
         [bool]$IsFinalLap,
         [int]$RunNumber,
         [string]$Track,
+        [int]$Coins,
+        [int]$Shrooms,
         [string]$BasePath
     )
     $items = Read-QueueItems -BasePath $BasePath
@@ -85,6 +93,8 @@ function Add-QueuedSubmission {
         IsFinalLap = $IsFinalLap
         RunNumber  = $RunNumber
         Track      = $Track
+        Coins      = $Coins
+        Shrooms    = $Shrooms
     }
     $items = @($items) + @($submission)
     Write-QueueItems -BasePath $BasePath -Items $items
@@ -101,7 +111,9 @@ function Invoke-QueuedSubmissions {
     for ($i = 0; $i -lt $items.Count; $i++) {
         $it = $items[$i]
         try {
-            Save-LapTimeToExcel -LapTime $it.LapTime -LapNumber $it.LapNumber -IsFinalLap $it.IsFinalLap -RunNumber $it.RunNumber -Track $it.Track -BasePath $BasePath
+            $queuedCoins = if ($it.PSObject.Properties.Name -contains 'Coins' -and $null -ne $it.Coins) { [int]$it.Coins } else { 0 }
+            $queuedShrooms = if ($it.PSObject.Properties.Name -contains 'Shrooms' -and $null -ne $it.Shrooms) { [int]$it.Shrooms } else { 0 }
+            Save-LapTimeToExcel -LapTime $it.LapTime -LapNumber $it.LapNumber -IsFinalLap $it.IsFinalLap -RunNumber $it.RunNumber -Track $it.Track -Coins $queuedCoins -Shrooms $queuedShrooms -BasePath $BasePath
         }
         catch {
             Write-Warning "Failed to flush a queued item: $($_.Exception.Message)"
@@ -197,6 +209,8 @@ function Save-LapTimeToExcel {
         [bool]$IsFinalLap,
         [int]$RunNumber,
         [string]$Track,
+        [int]$Coins,
+        [int]$Shrooms,
         [string]$BasePath
     )
     
@@ -233,6 +247,8 @@ function Save-LapTimeToExcel {
         LapTimeSeconds = if ($IsFinalLap -and $lastLapTimeSeconds -ne "") { $lastLapTimeSeconds } else { Convert-LapTimeToSeconds -TimeString $LapTime }
         IsFinalLap     = $IsFinalLap
         Track          = $Track
+        Coins          = $Coins
+        Shrooms        = $Shrooms
     }
     
     try {
@@ -251,6 +267,12 @@ function Save-LapTimeToExcel {
                 }
                 if (-not $item.PSObject.Properties.Name -contains "Track") {
                     $item | Add-Member -NotePropertyName "Track" -NotePropertyValue "" -Force
+                }
+                if (-not $item.PSObject.Properties.Name -contains "Coins") {
+                    $item | Add-Member -NotePropertyName "Coins" -NotePropertyValue $null -Force
+                }
+                if (-not $item.PSObject.Properties.Name -contains "Shrooms") {
+                    $item | Add-Member -NotePropertyName "Shrooms" -NotePropertyValue $null -Force
                 }
             }
             
@@ -308,11 +330,23 @@ try {
         exit 1
     }
     
+    # Validate Coins and Shrooms
+    if ($Coins -lt 0 -or $Coins -gt 20) {
+        Write-Error "Coins must be between 0 and 20"
+        exit 1
+    }
+    if ($PSBoundParameters.ContainsKey('Shrooms')) {
+        if ($Shrooms -lt 0 -or $Shrooms -gt 3) {
+            Write-Error "Shrooms must be between 0 and 3"
+            exit 1
+        }
+    }
+    
     # Handle Excel lock and queue behavior
     $excelFile = Get-ExcelFilePath -BasePath $BasePath
     if (Test-ExcelLocked -ExcelPath $excelFile) {
         Write-Warning "Excel file is currently open/locked. Queuing this lap submission for later."
-        Add-QueuedSubmission -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -BasePath $BasePath
+        Add-QueuedSubmission -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $Coins -Shrooms $Shrooms -BasePath $BasePath
         Write-Host "Queued submission. It will be added next time the program runs when the file is available." -ForegroundColor Yellow
         exit 0
     }
@@ -321,7 +355,7 @@ try {
     Invoke-QueuedSubmissions -BasePath $BasePath
 
     # Save current submission to Excel
-    Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -BasePath $BasePath
+    Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $Coins -Shrooms $Shrooms -BasePath $BasePath
     
 }
 catch {
