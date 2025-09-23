@@ -11,6 +11,9 @@ param(
     [Parameter(Mandatory = $true)]
     [int]$RunNumber,
     
+    [Parameter(Mandatory = $true)]
+    [string]$Track,
+    
     [Parameter(Mandatory = $false)]
     [string]$BasePath = "G:\OBS\Mario Kart World\time trials"
 )
@@ -85,6 +88,7 @@ function Save-LapTimeToExcel {
         [int]$LapNumber,
         [bool]$IsFinalLap,
         [int]$RunNumber,
+        [string]$Track,
         [string]$BasePath
     )
     
@@ -120,6 +124,7 @@ function Save-LapTimeToExcel {
         Time           = if ($IsFinalLap -and $lastLapTime -ne "") { $lastLapTime } else { $LapTime }
         LapTimeSeconds = if ($IsFinalLap -and $lastLapTimeSeconds -ne "") { $lastLapTimeSeconds } else { Convert-LapTimeToSeconds -TimeString $LapTime }
         IsFinalLap     = $IsFinalLap
+        Track          = $Track
     }
     
     try {
@@ -135,6 +140,9 @@ function Save-LapTimeToExcel {
                 }
                 if (-not $item.PSObject.Properties.Name -contains "LastLapTimeSeconds") {
                     $item | Add-Member -NotePropertyName "LastLapTimeSeconds" -NotePropertyValue "" -Force
+                }
+                if (-not $item.PSObject.Properties.Name -contains "Track") {
+                    $item | Add-Member -NotePropertyName "Track" -NotePropertyValue "" -Force
                 }
             }
             
@@ -153,6 +161,7 @@ function Save-LapTimeToExcel {
         Write-Host "Lap Number: $LapNumber" -ForegroundColor Cyan
         Write-Host "Lap Time: $LapTime" -ForegroundColor Cyan
         Write-Host "Final Lap: $IsFinalLap" -ForegroundColor Cyan
+        Write-Host "Track: $Track" -ForegroundColor Cyan
         Write-Host "Saved to: $excelFile" -ForegroundColor Yellow
         
     }
@@ -185,8 +194,14 @@ try {
         exit 1
     }
     
+    # Validate track name
+    if ([string]::IsNullOrWhiteSpace($Track)) {
+        Write-Error "Track name must be provided"
+        exit 1
+    }
+    
     # Save to Excel
-    Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -BasePath $BasePath
+    Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -BasePath $BasePath
     
 }
 catch {
@@ -195,7 +210,7 @@ catch {
 }
 
 # Usage examples:
-# .\save_lap_time.ps1 -LapTime "1:23.456" -LapNumber 1 -IsFinalLap $false -RunNumber 1
-# .\save_lap_time.ps1 -LapTime "1:20.123" -LapNumber 2 -IsFinalLap $true -RunNumber 1
-# .\save_lap_time.ps1 -LapTime "1:18.789" -LapNumber 1 -IsFinalLap $false -RunNumber 2
-# .\save_lap_time.ps1 -LapTime "1:15.234" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -BasePath "C:\MyTimeTrials"
+# .\save_lap_time.ps1 -LapTime "1:23.456" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit"
+# .\save_lap_time.ps1 -LapTime "1:20.123" -LapNumber 2 -IsFinalLap $true -RunNumber 1 -Track "Mario Circuit"
+# .\save_lap_time.ps1 -LapTime "1:18.789" -LapNumber 1 -IsFinalLap $false -RunNumber 2 -Track "Rainbow Road"
+# .\save_lap_time.ps1 -LapTime "1:15.234" -LapNumber 1 -IsFinalLap $false -RunNumber 1 -Track "Mario Circuit" -BasePath "C:\MyTimeTrials"
