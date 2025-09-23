@@ -53,7 +53,7 @@ Before setting up this script, ensure you have:
 
 ### Available Actions
 
-The script provides two main Advanced Scene Switcher actions:
+The script provides three main Advanced Scene Switcher actions:
 
 #### 1. MKW Track Action
 
@@ -79,6 +79,15 @@ Records lap times to CSV with automatic calculations.
 
 - **Is Final Lap**: Checkbox to indicate if this is the final lap of the run
 
+#### 3. MKW Move Old Images Action
+
+Moves image files matching a pattern to a destination subfolder for organization.
+
+**Direct Inputs:**
+
+- **File Pattern**: Pattern to match files (default: `Lap-*.png`)
+- **Destination Subfolder**: Subfolder name to move files to (default: `lap times`)
+
 ### Quick start: import provided macros (recommended)
 
 You can import a ready-made macro setup as a starting point:
@@ -90,7 +99,7 @@ You can import a ready-made macro setup as a starting point:
    - **File paths**: Update any `C:\dev\mk-time-trial-tracker\...` paths if your repo is saved elsewhere.
    - **Screenshot save paths**: Change `G:\OBS\Mario Kart World\...` to your desired location.
    - **OCR regions/colors**: The macros include example OCR areas and colors tuned to a 4K capture; tweak the areas and thresholds for your resolution/theme if needed.
-   - **Script action**: Ensure the actions `MKW Track` and `MKW Save Lap` are present and configured correctly.
+   - **Script action**: Ensure the actions `MKW Track`, `MKW Save Lap`, and `MKW Move Old Images` are present and configured correctly.
 
 ### Data Output
 
