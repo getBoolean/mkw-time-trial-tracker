@@ -15,7 +15,7 @@ param(
     [string]$Track,
     
     [Parameter(Mandatory = $false)]
-    [int]$Coins = 0,
+    [string]$Coins = "0",
     
     [Parameter(Mandatory = $false)]
     [int]$Shrooms = 0,
@@ -247,7 +247,7 @@ function Save-LapTimeToExcel {
             if ($existingForRun) {
                 $prevCoins = ($existingForRun | ForEach-Object { if ($null -ne $_.Coins) { [int]$_.Coins } else { 0 } } | Measure-Object -Sum).Sum
                 $prevShrooms = ($existingForRun | ForEach-Object { if ($null -ne $_.Shrooms) { [int]$_.Shrooms } else { 0 } } | Measure-Object -Sum).Sum
-                if ($null -ne $prevCoins) { $coinsToSave = [int]$Coins - [int]$prevCoins }
+                if ($null -ne $prevCoins) { $coinsToSave = $Coins - [int]$prevCoins }
                 if ($null -ne $prevShrooms) { $shroomsToSave = [int]$Shrooms - [int]$prevShrooms }
             }
         }
@@ -349,7 +349,16 @@ try {
     }
     
     # Validate Coins and Shrooms
-    if ($Coins -lt 0 -or $Coins -gt 20) {
+    $coinsInt = 0
+    try {
+        $coinsInt = [int]$Coins.Trim()
+    }
+    catch {
+        Write-Error "Coins must be a valid integer"
+        exit 1
+    }
+    
+    if ($coinsInt -lt 0 -or $coinsInt -gt 20) {
         Write-Error "Coins must be between 0 and 20"
         exit 1
     }
@@ -364,7 +373,7 @@ try {
     $excelFile = Get-ExcelFilePath -BasePath $BasePath
     if (Test-ExcelLocked -ExcelPath $excelFile) {
         Write-Warning "Excel file is currently open/locked. Queuing this lap submission for later."
-        Add-QueuedSubmission -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $Coins -Shrooms $Shrooms -BasePath $BasePath
+        Add-QueuedSubmission -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $coinsInt -Shrooms $Shrooms -BasePath $BasePath
         Write-Host "Queued submission. It will be added next time the program runs when the file is available." -ForegroundColor Yellow
         exit 0
     }
@@ -373,7 +382,7 @@ try {
     Invoke-QueuedSubmissions -BasePath $BasePath
 
     # Save current submission to Excel
-    Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $Coins -Shrooms $Shrooms -BasePath $BasePath
+    Save-LapTimeToExcel -LapTime $LapTime -LapNumber $LapNumber -IsFinalLap $IsFinalLap -RunNumber $RunNumber -Track $Track -Coins $coinsInt -Shrooms $Shrooms -BasePath $BasePath
     
 }
 catch {
