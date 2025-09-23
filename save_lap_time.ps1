@@ -238,6 +238,24 @@ function Save-LapTimeToExcel {
         }
     }
     
+    # Calculate per-lap Coins/Shrooms by subtracting previous laps in same run
+    $coinsToSave = $Coins
+    $shroomsToSave = $Shrooms
+    try {
+        if (Test-Path $excelFile) {
+            $existingForRun = (Import-Excel -Path $excelFile) | Where-Object { $_.RunNumber -eq $RunNumber }
+            if ($existingForRun) {
+                $prevCoins = ($existingForRun | ForEach-Object { if ($null -ne $_.Coins) { [int]$_.Coins } else { 0 } } | Measure-Object -Sum).Sum
+                $prevShrooms = ($existingForRun | ForEach-Object { if ($null -ne $_.Shrooms) { [int]$_.Shrooms } else { 0 } } | Measure-Object -Sum).Sum
+                if ($null -ne $prevCoins) { $coinsToSave = [int]$Coins - [int]$prevCoins }
+                if ($null -ne $prevShrooms) { $shroomsToSave = [int]$Shrooms - [int]$prevShrooms }
+            }
+        }
+    }
+    catch {
+        # If reading existing fails, fall back to provided values
+    }
+
     # Create data object
     $lapData = [PSCustomObject]@{
         Timestamp      = $timestamp
@@ -247,8 +265,8 @@ function Save-LapTimeToExcel {
         LapTimeSeconds = if ($IsFinalLap -and $lastLapTimeSeconds -ne "") { $lastLapTimeSeconds } else { Convert-LapTimeToSeconds -TimeString $LapTime }
         IsFinalLap     = $IsFinalLap
         Track          = $Track
-        Coins          = $Coins
-        Shrooms        = $Shrooms
+        Coins          = $coinsToSave
+        Shrooms        = $shroomsToSave
     }
     
     try {
