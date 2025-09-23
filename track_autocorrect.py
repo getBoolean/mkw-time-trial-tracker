@@ -25,7 +25,7 @@ def run_action(data, instance_id):
         return
 
     obs.script_log(
-        obs.LOG_VERBOSE,
+        obs.LOG_INFO,
         "OCR text: " + ocr_text + " - Identified track: " + identified_track,
     )
     advss_set_temp_var_value("identified_track", ocr_text, instance_id)
