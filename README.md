@@ -68,7 +68,7 @@ python3 -m pip install dist/*.whl
 
 ### Step 2: Prefer prebuilt release (no build needed)
 
-1. Optional (recommended): install the included fast module wheel from the `wheelhouse/` folder (run these from the extracted folder).
+1. Optional (recommended): install the included binaries from the `wheelhouse/` folder for faster image generation (run these from the extracted folder).
    - Windows (PowerShell):
 
      ```powershell
@@ -90,12 +90,9 @@ python3 -m pip install dist/*.whl
      python3 -m pip install wheelhouse/*.whl
      ```
 
-2. In OBS, load the script from the extracted folder: **Tools** → **Scripts** → **+** → select `TimeTrialTracker.py`.
-
 Notes:
 
-- The wheel is built for Python 3.10 (`cp310`). If you skip installing it, the script will fall back to pure Python (slower) automatically.
-- You can still update macros/config exactly the same as when cloning the repo.
+- The wheel binary is built for Python 3.10 (`cp310`). If you skip installing it, the script will fall back to a much slower pure Python implmentation.
 
 ### Step 3: Install Advanced Scene Switcher
 
@@ -125,7 +122,7 @@ The script provides four main Advanced Scene Switcher actions:
 Automatically identifies track names from OCR text.
 
 - **OCR Text Variable Name**: Variable containing the OCR text to process
-- **Output**: Sets `identified_track` and `identified_track_safe` temporary variables
+- **Output**: Sets `identified_track` and `identified_track_safe` macro properties
 
 #### 2. MKW Save Lap Action  
 
@@ -151,7 +148,7 @@ Moves image files matching a pattern to a destination subfolder for organization
 **Direct Inputs:**
 
 - **File Pattern**: Pattern to match files (default: `Lap-*.png`)
-- **Destination Subfolder**: Subfolder name to move files to (default: `lap times`)
+- **Destination Subfolder**: Subfolder name to move old lap screenshots to (default: `lap times`)
 
 #### 4. MKW Generate Lap Splits Image Action
 
@@ -168,7 +165,7 @@ Manually generates a composite image showing all lap times for a specific run ov
 - Automatically combines lap times with screenshot (generated from the final screenshot)
 - Shows individual lap times and total time
 - Outputs file named `Splits_[Track]_Run-[X].png`
-- Automatically triggered when final lap is saved with "Is Final Lap" checked
+- Automatically triggered when final lap is saved with "Is Final Lap" checked and image gen is enabled
 
 **Example output:**
 
