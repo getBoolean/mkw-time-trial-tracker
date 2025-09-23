@@ -8,17 +8,9 @@ import json
 import time
 import csv
 
-# PIL for image processing
-try:
-    from PIL import Image, ImageDraw, ImageFont
-
-    PIL_AVAILABLE = True
-except ImportError:
-    PIL_AVAILABLE = False
-    obs.script_log(
-        obs.LOG_WARNING,
-        "PIL (Pillow) not available. Lap time image generation will be disabled.",
-    )
+# Image processing with core Python libraries
+import struct
+import zlib
 
 action_name = "MKW Track"
 
@@ -274,6 +266,12 @@ def script_properties():
         "process_queue_btn",
         "Process Queue Now",
         _on_process_queue_button,
+    )
+    obs.obs_properties_add_button(
+        props,
+        "create_last_image_btn",
+        "Create Image for Last Final Lap",
+        _on_create_last_image_button,
     )
     return props
 
@@ -911,16 +909,78 @@ def _on_process_queue_button(props, prop):
     return True
 
 
+def _get_last_final_lap(base_path):
+    """Get information about the most recent final lap from CSV data"""
+    csv_path = _csv_file_path(base_path)
+    if not os.path.exists(csv_path):
+        return None
+
+    try:
+        headers, existing = _read_csv_data(csv_path)
+
+        # Find all final laps
+        final_laps = [
+            r for r in existing if str(r.get("IsFinalLap", "")).lower() in ("true", "1")
+        ]
+
+        if not final_laps:
+            return None
+
+        # Sort by timestamp to get the most recent
+        final_laps.sort(key=lambda x: x.get("Timestamp", ""), reverse=True)
+        last_final_lap = final_laps[0]
+
+        return {
+            "run_number": int(last_final_lap.get("RunNumber", 0)),
+            "track": last_final_lap.get("Track", ""),
+            "timestamp": last_final_lap.get("Timestamp", ""),
+        }
+
+    except Exception as e:
+        obs.script_log(obs.LOG_WARNING, f"Error reading last final lap: {e}")
+        return None
+
+
+def _on_create_last_image_button(props, prop):
+    def worker():
+        try:
+            last_final_lap = _get_last_final_lap(g_base_path)
+            if last_final_lap is None:
+                obs.script_log(obs.LOG_WARNING, "No final lap found in CSV data")
+                return
+
+            run_number = last_final_lap["run_number"]
+            track = last_final_lap["track"]
+            timestamp = last_final_lap["timestamp"]
+
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Creating image for Run {run_number} on {track} (completed at {timestamp})",
+            )
+
+            result = _create_lap_times_image(g_base_path, run_number, track)
+            if result:
+                obs.script_log(
+                    obs.LOG_INFO,
+                    f"Successfully created lap times image: {os.path.basename(result)}",
+                )
+            else:
+                obs.script_log(obs.LOG_WARNING, "Failed to create lap times image")
+
+        except Exception as e:
+            obs.script_log(obs.LOG_WARNING, f"Create last image failed: {e}")
+
+    threading.Thread(target=worker, args=()).start()
+    return True
+
+
 ###############################################################################
-# Lap times image generation
+# Lap times image generation (Pure Python)
 ###############################################################################
 
 
 def _get_lap_times_for_run(base_path, run_number, track):
     """Get all lap times for a specific run and track from CSV data"""
-    if not PIL_AVAILABLE:
-        return []
-
     csv_path = _csv_file_path(base_path)
     if not os.path.exists(csv_path):
         return []
@@ -959,14 +1019,1026 @@ def _get_lap_times_for_run(base_path, run_number, track):
         return []
 
 
-def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=None):
-    """Create a composite image with lap times overlaid"""
-    if not PIL_AVAILABLE:
-        obs.script_log(
-            obs.LOG_WARNING, "Cannot create lap times image: PIL not available"
-        )
+def _read_png_file(filename):
+    """Read a PNG file and return pixel data and dimensions"""
+    try:
+        with open(filename, "rb") as f:
+            # Check PNG signature
+            signature = f.read(8)
+            if signature != b"\x89PNG\r\n\x1a\n":
+                return None, 0, 0
+
+            width = height = bit_depth = color_type = 0
+            image_data = b""
+
+            while True:
+                # Read chunk length
+                length_data = f.read(4)
+                if len(length_data) != 4:
+                    break
+                length = struct.unpack(">I", length_data)[0]
+
+                # Read chunk type
+                chunk_type = f.read(4)
+                if len(chunk_type) != 4:
+                    break
+
+                # Read chunk data
+                chunk_data = f.read(length)
+                if len(chunk_data) != length:
+                    break
+
+                # Read CRC (but don't verify it for simplicity)
+                crc = f.read(4)
+                if len(crc) != 4:
+                    break
+
+                if chunk_type == b"IHDR":
+                    if length >= 13:
+                        width, height, bit_depth, color_type = struct.unpack(
+                            ">IIBB", chunk_data[:10]
+                        )
+                elif chunk_type == b"IDAT":
+                    image_data += chunk_data
+                elif chunk_type == b"IEND":
+                    break
+
+            if not image_data or width == 0 or height == 0:
+                return None, 0, 0
+
+            # Decompress image data
+            try:
+                decompressed = zlib.decompress(image_data)
+            except zlib.error:
+                return None, 0, 0
+
+            # Determine bytes per pixel based on color type
+            if color_type == 0:  # Grayscale
+                bytes_per_pixel = bit_depth // 8 if bit_depth >= 8 else 1
+            elif color_type == 2:  # RGB
+                bytes_per_pixel = (bit_depth * 3) // 8
+            elif color_type == 3:  # Palette
+                bytes_per_pixel = bit_depth // 8 if bit_depth >= 8 else 1
+            elif color_type == 4:  # Grayscale + Alpha
+                bytes_per_pixel = (bit_depth * 2) // 8
+            elif color_type == 6:  # RGBA
+                bytes_per_pixel = (bit_depth * 4) // 8
+            else:
+                # Unsupported format
+                return None, 0, 0
+
+            # Calculate bytes per row
+            bytes_per_row = width * bytes_per_pixel + 1  # +1 for filter byte
+
+            # Convert to RGB pixel format
+            pixels = []
+            for y in range(height):
+                row_start = y * bytes_per_row
+                if row_start + bytes_per_row > len(decompressed):
+                    return None, 0, 0
+
+                row_data = decompressed[row_start : row_start + bytes_per_row]
+                filter_byte = row_data[0]
+                pixel_data = row_data[1:]
+
+                # Apply PNG filters (simplified - only handle filter type 0)
+                if filter_byte != 0:
+                    # For now, only support unfiltered data
+                    obs.script_log(
+                        obs.LOG_WARNING,
+                        f"PNG filter {filter_byte} not supported, may cause corruption",
+                    )
+
+                # Convert different formats to RGB
+                if color_type == 2:  # Already RGB
+                    if bit_depth == 8:
+                        pixels.append(bytes(pixel_data))
+                    else:
+                        # Convert 16-bit to 8-bit
+                        rgb_data = []
+                        for i in range(
+                            0, len(pixel_data), 6
+                        ):  # 2 bytes per channel * 3 channels
+                            if i + 5 < len(pixel_data):
+                                r = pixel_data[i] if i < len(pixel_data) else 0
+                                g = pixel_data[i + 2] if i + 2 < len(pixel_data) else 0
+                                b = pixel_data[i + 4] if i + 4 < len(pixel_data) else 0
+                                rgb_data.extend([r, g, b])
+                        pixels.append(bytes(rgb_data))
+                elif color_type == 6:  # RGBA - convert to RGB
+                    if bit_depth == 8:
+                        rgb_data = []
+                        for i in range(0, len(pixel_data), 4):  # Skip alpha channel
+                            if i + 2 < len(pixel_data):
+                                rgb_data.extend(pixel_data[i : i + 3])
+                        pixels.append(bytes(rgb_data))
+                    else:
+                        # Convert 16-bit RGBA to 8-bit RGB
+                        rgb_data = []
+                        for i in range(
+                            0, len(pixel_data), 8
+                        ):  # 2 bytes per channel * 4 channels
+                            if i + 5 < len(pixel_data):
+                                r = pixel_data[i]
+                                g = pixel_data[i + 2]
+                                b = pixel_data[i + 4]
+                                rgb_data.extend([r, g, b])
+                        pixels.append(bytes(rgb_data))
+                elif color_type == 0:  # Grayscale - convert to RGB
+                    rgb_data = []
+                    for gray in pixel_data:
+                        rgb_data.extend([gray, gray, gray])
+                    pixels.append(bytes(rgb_data))
+                else:
+                    # Unsupported color type, create black row
+                    black_row = bytes([0] * (width * 3))
+                    pixels.append(black_row)
+
+            return pixels, width, height
+
+    except Exception as e:
+        obs.script_log(obs.LOG_WARNING, f"Error reading PNG file {filename}: {e}")
+        return None, 0, 0
+
+
+def _create_png_image(width, height, bg_color=(30, 30, 30)):
+    """Create a simple PNG image data structure"""
+    # Create pixel data (RGB format)
+    pixels = []
+    for _ in range(height):
+        row = []
+        for _ in range(width):
+            row.extend(bg_color)  # RGB values
+        pixels.append(bytes(row))
+
+    return pixels
+
+
+def _draw_filled_rect(pixels, width, height, x1, y1, x2, y2, color):
+    """Draw a filled rectangle on the pixel data"""
+    # Clamp coordinates
+    x1, y1 = max(0, x1), max(0, y1)
+    x2, y2 = min(width - 1, x2), min(height - 1, y2)
+
+    for y in range(y1, y2 + 1):
+        if 0 <= y < height:
+            for x in range(x1, x2 + 1):
+                if 0 <= x < width:
+                    # Each pixel is 3 bytes (RGB)
+                    pixel_offset = x * 3
+                    if pixel_offset + 2 < len(pixels[y]):
+                        row = bytearray(pixels[y])
+                        row[pixel_offset : pixel_offset + 3] = color
+                        pixels[y] = bytes(row)
+
+
+def _draw_text_bitmap(pixels, width, height, x, y, text, color=(255, 255, 255)):
+    """Draw text using a comprehensive 8x8 bitmap font"""
+    # Complete 8x8 bitmap font for ASCII characters
+    # Includes numbers, letters (upper/lowercase), and common symbols
+    char_patterns = {
+        # Numbers for lap times (0-9)
+        "0": [
+            0b01111100,
+            0b10000010,
+            0b10000110,
+            0b10001010,
+            0b10010010,
+            0b10100010,
+            0b10000010,
+            0b01111100,
+        ],
+        "1": [
+            0b00001000,
+            0b00011000,
+            0b00001000,
+            0b00001000,
+            0b00001000,
+            0b00001000,
+            0b00001000,
+            0b00111110,
+        ],
+        "2": [
+            0b01111100,
+            0b10000010,
+            0b00000010,
+            0b00111100,
+            0b01000000,
+            0b10000000,
+            0b10000000,
+            0b11111110,
+        ],
+        "3": [
+            0b01111100,
+            0b10000010,
+            0b00000010,
+            0b00111100,
+            0b00000010,
+            0b00000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "4": [
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b11111110,
+            0b00000010,
+            0b00000010,
+            0b00000010,
+            0b00000010,
+        ],
+        "5": [
+            0b11111110,
+            0b10000000,
+            0b10000000,
+            0b11111100,
+            0b00000010,
+            0b00000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "6": [
+            0b01111100,
+            0b10000010,
+            0b10000000,
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "7": [
+            0b11111110,
+            0b00000010,
+            0b00000010,
+            0b00000100,
+            0b00001000,
+            0b00010000,
+            0b00100000,
+            0b01000000,
+        ],
+        "8": [
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "9": [
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111110,
+            0b00000010,
+            0b10000010,
+            0b01111100,
+        ],
+        # Special characters for time display
+        " ": [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+        ],
+        ":": [
+            0b00000000,
+            0b00000000,
+            0b00011000,
+            0b00011000,
+            0b00000000,
+            0b00011000,
+            0b00011000,
+            0b00000000,
+        ],
+        ".": [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00011000,
+            0b00011000,
+        ],
+        # Complete alphabet - Uppercase letters
+        "A": [
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b11111110,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+        ],
+        "B": [
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b11111100,
+        ],
+        "C": [
+            0b01111100,
+            0b10000010,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000010,
+            0b01111100,
+        ],
+        "D": [
+            0b11111000,
+            0b10000100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000100,
+            0b11111000,
+        ],
+        "E": [
+            0b11111110,
+            0b10000000,
+            0b10000000,
+            0b11111100,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b11111110,
+        ],
+        "F": [
+            0b11111110,
+            0b10000000,
+            0b10000000,
+            0b11111100,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+        ],
+        "G": [
+            0b01111100,
+            0b10000010,
+            0b10000000,
+            0b10001110,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "H": [
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b11111110,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+        ],
+        "I": [
+            0b01111100,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b01111100,
+        ],
+        "J": [
+            0b00111110,
+            0b00000010,
+            0b00000010,
+            0b00000010,
+            0b00000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "K": [
+            0b10000010,
+            0b10000100,
+            0b10001000,
+            0b10110000,
+            0b11001000,
+            0b10000100,
+            0b10000010,
+            0b10000001,
+        ],
+        "L": [
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b11111110,
+        ],
+        "M": [
+            0b10000010,
+            0b11000110,
+            0b10101010,
+            0b10010010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+        ],
+        "N": [
+            0b10000010,
+            0b11000010,
+            0b10100010,
+            0b10010010,
+            0b10001010,
+            0b10000110,
+            0b10000010,
+            0b10000010,
+        ],
+        "O": [
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "P": [
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b11111100,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+        ],
+        "Q": [
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10001010,
+            0b10000100,
+            0b01111010,
+            0b00000001,
+        ],
+        "R": [
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b11111100,
+            0b10010000,
+            0b10001000,
+            0b10000100,
+            0b10000010,
+        ],
+        "S": [
+            0b01111100,
+            0b10000010,
+            0b10000000,
+            0b01111100,
+            0b00000010,
+            0b00000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "T": [
+            0b11111110,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+        ],
+        "U": [
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+        ],
+        "V": [
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01000100,
+            0b00111000,
+        ],
+        "W": [
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10010010,
+            0b10101010,
+            0b11000110,
+            0b10000010,
+        ],
+        "X": [
+            0b10000010,
+            0b01000100,
+            0b00101000,
+            0b00010000,
+            0b00101000,
+            0b01000100,
+            0b10000010,
+            0b10000010,
+        ],
+        "Y": [
+            0b10000010,
+            0b01000100,
+            0b00101000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+        ],
+        "Z": [
+            0b11111110,
+            0b00000010,
+            0b00000100,
+            0b00001000,
+            0b00010000,
+            0b00100000,
+            0b01000000,
+            0b11111110,
+        ],
+        # Complete alphabet - Lowercase letters
+        "a": [
+            0b00000000,
+            0b00000000,
+            0b01111100,
+            0b00000010,
+            0b01111110,
+            0b10000010,
+            0b01111110,
+            0b00000000,
+        ],
+        "b": [
+            0b10000000,
+            0b10000000,
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b11111100,
+            0b00000000,
+        ],
+        "c": [
+            0b00000000,
+            0b00000000,
+            0b01111100,
+            0b10000010,
+            0b10000000,
+            0b10000010,
+            0b01111100,
+            0b00000000,
+        ],
+        "d": [
+            0b00000010,
+            0b00000010,
+            0b01111110,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111110,
+            0b00000000,
+        ],
+        "e": [
+            0b00000000,
+            0b00000000,
+            0b01111100,
+            0b10000010,
+            0b11111110,
+            0b10000000,
+            0b01111100,
+            0b00000000,
+        ],
+        "f": [
+            0b00111100,
+            0b01000010,
+            0b01000000,
+            0b11111000,
+            0b01000000,
+            0b01000000,
+            0b01000000,
+            0b01000000,
+        ],
+        "g": [
+            0b00000000,
+            0b00000000,
+            0b01111110,
+            0b10000010,
+            0b01111110,
+            0b00000010,
+            0b01111100,
+            0b00000000,
+        ],
+        "h": [
+            0b10000000,
+            0b10000000,
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b00000000,
+        ],
+        "i": [
+            0b00010000,
+            0b00000000,
+            0b00110000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00111000,
+            0b00000000,
+        ],
+        "j": [
+            0b00000100,
+            0b00000000,
+            0b00001100,
+            0b00000100,
+            0b00000100,
+            0b10000100,
+            0b01111000,
+            0b00000000,
+        ],
+        "k": [
+            0b10000000,
+            0b10000000,
+            0b10000100,
+            0b10001000,
+            0b10110000,
+            0b11001000,
+            0b10000100,
+            0b00000000,
+        ],
+        "l": [
+            0b00110000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00010000,
+            0b00111000,
+            0b00000000,
+        ],
+        "m": [
+            0b00000000,
+            0b00000000,
+            0b11010100,
+            0b10101010,
+            0b10101010,
+            0b10101010,
+            0b10101010,
+            0b00000000,
+        ],
+        "n": [
+            0b00000000,
+            0b00000000,
+            0b11111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b00000000,
+        ],
+        "o": [
+            0b00000000,
+            0b00000000,
+            0b01111100,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01111100,
+            0b00000000,
+        ],
+        "p": [
+            0b00000000,
+            0b00000000,
+            0b11111100,
+            0b10000010,
+            0b11111100,
+            0b10000000,
+            0b10000000,
+            0b00000000,
+        ],
+        "q": [
+            0b00000000,
+            0b00000000,
+            0b01111110,
+            0b10000010,
+            0b01111110,
+            0b00000010,
+            0b00000010,
+            0b00000000,
+        ],
+        "r": [
+            0b00000000,
+            0b00000000,
+            0b10111100,
+            0b11000000,
+            0b10000000,
+            0b10000000,
+            0b10000000,
+            0b00000000,
+        ],
+        "s": [
+            0b00000000,
+            0b00000000,
+            0b01111110,
+            0b10000000,
+            0b01111100,
+            0b00000010,
+            0b11111100,
+            0b00000000,
+        ],
+        "t": [
+            0b00010000,
+            0b00010000,
+            0b01111100,
+            0b00010000,
+            0b00010000,
+            0b00010010,
+            0b00001100,
+            0b00000000,
+        ],
+        "u": [
+            0b00000000,
+            0b00000000,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b10000110,
+            0b01111010,
+            0b00000000,
+        ],
+        "v": [
+            0b00000000,
+            0b00000000,
+            0b10000010,
+            0b10000010,
+            0b10000010,
+            0b01000100,
+            0b00111000,
+            0b00000000,
+        ],
+        "w": [
+            0b00000000,
+            0b00000000,
+            0b10000010,
+            0b10010010,
+            0b10101010,
+            0b11000110,
+            0b10000010,
+            0b00000000,
+        ],
+        "x": [
+            0b00000000,
+            0b00000000,
+            0b10000010,
+            0b01000100,
+            0b00111000,
+            0b01000100,
+            0b10000010,
+            0b00000000,
+        ],
+        "y": [
+            0b00000000,
+            0b00000000,
+            0b10000010,
+            0b10000010,
+            0b01111110,
+            0b00000010,
+            0b01111100,
+            0b00000000,
+        ],
+        "z": [
+            0b00000000,
+            0b00000000,
+            0b11111110,
+            0b00000100,
+            0b00111000,
+            0b01000000,
+            0b11111110,
+            0b00000000,
+        ],
+        # Additional useful characters
+        "-": [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b11111110,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+        ],
+        "_": [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b11111110,
+        ],
+        "(": [
+            0b00001100,
+            0b00011000,
+            0b00110000,
+            0b00110000,
+            0b00110000,
+            0b00110000,
+            0b00011000,
+            0b00001100,
+        ],
+        ")": [
+            0b00110000,
+            0b00011000,
+            0b00001100,
+            0b00001100,
+            0b00001100,
+            0b00001100,
+            0b00011000,
+            0b00110000,
+        ],
+        "/": [
+            0b00000010,
+            0b00000100,
+            0b00001000,
+            0b00010000,
+            0b00100000,
+            0b01000000,
+            0b10000000,
+            0b00000000,
+        ],
+        "\\": [
+            0b10000000,
+            0b01000000,
+            0b00100000,
+            0b00010000,
+            0b00001000,
+            0b00000100,
+            0b00000010,
+            0b00000000,
+        ],
+        ",": [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00011000,
+            0b00011000,
+            0b00110000,
+        ],
+        "!": [
+            0b00011000,
+            0b00011000,
+            0b00011000,
+            0b00011000,
+            0b00011000,
+            0b00000000,
+            0b00011000,
+            0b00000000,
+        ],
+        "?": [
+            0b01111100,
+            0b10000010,
+            0b00000010,
+            0b00001100,
+            0b00010000,
+            0b00000000,
+            0b00010000,
+            0b00000000,
+        ],
+    }
+
+    current_x = x
+    for char in text.lower():
+        if char in char_patterns:
+            pattern = char_patterns[char]
+            for row_idx, row_pattern in enumerate(pattern):
+                char_y = y + row_idx
+                if 0 <= char_y < height:
+                    for bit_idx in range(8):
+                        if row_pattern & (1 << (7 - bit_idx)):
+                            char_x = current_x + bit_idx
+                            if 0 <= char_x < width:
+                                pixel_offset = char_x * 3
+                                if pixel_offset + 2 < len(pixels[char_y]):
+                                    row = bytearray(pixels[char_y])
+                                    row[pixel_offset : pixel_offset + 3] = color
+                                    pixels[char_y] = bytes(row)
+        current_x += 9  # 8 pixels + 1 pixel spacing
+
+
+def _save_png_file(pixels, width, height, filename):
+    """Save pixel data as a PNG file using pure Python"""
+
+    def write_png_chunk(chunk_type, data):
+        """Write a PNG chunk"""
+        chunk_data = chunk_type + data
+        crc = zlib.crc32(chunk_data) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + chunk_data + struct.pack(">I", crc)
+
+    # PNG file signature
+    png_signature = b"\x89PNG\r\n\x1a\n"
+
+    # IHDR chunk
+    ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    ihdr_chunk = write_png_chunk(b"IHDR", ihdr_data)
+
+    # Prepare image data
+    image_data = b""
+    for row in pixels:
+        # Add filter byte (0 = None filter)
+        image_data += b"\x00" + row
+
+    # Compress image data
+    compressed_data = zlib.compress(image_data)
+    idat_chunk = write_png_chunk(b"IDAT", compressed_data)
+
+    # IEND chunk
+    iend_chunk = write_png_chunk(b"IEND", b"")
+
+    # Write PNG file
+    with open(filename, "wb") as f:
+        f.write(png_signature)
+        f.write(ihdr_chunk)
+        f.write(idat_chunk)
+        f.write(iend_chunk)
+
+
+def _find_screenshot_for_run(base_path, run_number, track):
+    """Find the most recent screenshot that could be from this final lap"""
+    import glob
+
+    # Try various screenshot patterns and locations
+    search_patterns = [
+        # In base path
+        os.path.join(base_path, "*.png"),
+        os.path.join(base_path, "*.jpg"),
+        os.path.join(base_path, "*.jpeg"),
+        # In track-specific subfolder
+        os.path.join(base_path, make_filesystem_safe(track), "*.png"),
+        os.path.join(base_path, make_filesystem_safe(track), "*.jpg"),
+        os.path.join(base_path, make_filesystem_safe(track), "*.jpeg"),
+        # With track name in parent directory
+        os.path.join(os.path.dirname(base_path), make_filesystem_safe(track), "*.png"),
+        os.path.join(os.path.dirname(base_path), make_filesystem_safe(track), "*.jpg"),
+        os.path.join(os.path.dirname(base_path), make_filesystem_safe(track), "*.jpeg"),
+    ]
+
+    all_screenshots = []
+    for pattern in search_patterns:
+        try:
+            all_screenshots.extend(glob.glob(pattern))
+        except (OSError, IOError):
+            continue
+
+    if not all_screenshots:
         return None
 
+    # Sort by modification time (most recent first)
+    all_screenshots.sort(key=os.path.getmtime, reverse=True)
+
+    # Return the most recent screenshot
+    return all_screenshots[0]
+
+
+def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=None):
+    """Create a simple image with lap times using pure Python"""
     try:
         # Get lap times for this run
         lap_times = _get_lap_times_for_run(base_path, run_number, track)
@@ -974,51 +2046,57 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
             obs.script_log(obs.LOG_WARNING, "No lap times found for image generation")
             return None
 
-        # Try to find the most recent screenshot to use as base
-        base_image = None
-        if final_screenshot_path and os.path.exists(final_screenshot_path):
-            base_image = Image.open(final_screenshot_path)
+        # Try to find and load a background screenshot
+        screenshot_path = final_screenshot_path
+        if not screenshot_path:
+            screenshot_path = _find_screenshot_for_run(base_path, run_number, track)
+
+        # Load background image if available
+        # Note: PNG reading is currently disabled due to complexity with filters and formats
+        # Will use default background for now
+        background_pixels, bg_width, bg_height = None, 0, 0
+        if screenshot_path and os.path.exists(screenshot_path):
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Screenshot found: {os.path.basename(screenshot_path)} (background loading temporarily disabled)",
+            )
+            # Temporarily disable PNG reading until we can properly handle all PNG formats
+            # background_pixels, bg_width, bg_height = _read_png_file(screenshot_path)
+
+        # Set image dimensions
+        if background_pixels and bg_width > 0 and bg_height > 0:
+            width, height = bg_width, bg_height
+            pixels = background_pixels
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Successfully loaded screenshot background ({width}x{height})",
+            )
         else:
-            # Look for recent screenshots in the base path
-            import glob
+            # Fallback to default size with dark background
+            width, height = 800, 600
+            pixels = _create_png_image(width, height, bg_color=(30, 30, 30))
+            obs.script_log(obs.LOG_INFO, f"Using default background ({width}x{height})")
 
-            screenshot_patterns = [
-                os.path.join(base_path, "*.png"),
-                os.path.join(base_path, "*.jpg"),
-                os.path.join(base_path, "*.jpeg"),
-            ]
+        # Draw semi-transparent background for text area
+        # Position text in bottom-right corner for better visibility
+        text_area_width = 350
+        text_area_height = (
+            60 + (len(lap_times) * 30) + 80
+        )  # Header + laps + total + padding
+        text_x = width - text_area_width - 20
+        text_y = height - text_area_height - 20
 
-            recent_screenshots = []
-            for pattern in screenshot_patterns:
-                recent_screenshots.extend(glob.glob(pattern))
-
-            if recent_screenshots:
-                # Get the most recently modified screenshot
-                recent_screenshots.sort(key=os.path.getmtime, reverse=True)
-                base_image = Image.open(recent_screenshots[0])
-
-        # If no screenshot found, create a blank image
-        if base_image is None:
-            base_image = Image.new("RGB", (1920, 1080), color=(30, 30, 30))
-
-        # Make a copy to work with
-        result_image = base_image.copy()
-        draw = ImageDraw.Draw(result_image)
-
-        # Try to load a font, fall back to default if not available
-        try:
-            # Try to find a system font
-            font_large = ImageFont.truetype("arial.ttf", 48)
-            font_medium = ImageFont.truetype("arial.ttf", 36)
-        except (OSError, IOError):
-            try:
-                # Try alternative font names
-                font_large = ImageFont.truetype("Arial.ttf", 48)
-                font_medium = ImageFont.truetype("Arial.ttf", 36)
-            except (OSError, IOError):
-                # Use default font
-                font_large = ImageFont.load_default()
-                font_medium = ImageFont.load_default()
+        # Draw dark semi-transparent background for better text readability
+        _draw_filled_rect(
+            pixels,
+            width,
+            height,
+            text_x - 10,
+            text_y - 10,
+            text_x + text_area_width + 10,
+            text_y + text_area_height + 10,
+            (0, 0, 0),  # Pure black background for max contrast
+        )
 
         # Calculate total time
         total_seconds = 0.0
@@ -1030,69 +2108,52 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
 
         total_time_str = _convert_seconds_to_laptime(total_seconds)
 
-        # Image dimensions
-        img_width, img_height = result_image.size
-
-        # Create semi-transparent overlay for text background
-        overlay = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-
-        # Calculate text area dimensions
-        text_area_width = 400
-        text_area_height = 60 + (len(lap_times) * 50) + 100  # Header + laps + total
-
-        # Position text area (top-right corner with some padding)
-        text_x = img_width - text_area_width - 50
-        text_y = 50
-
-        # Draw semi-transparent background for text
-        overlay_draw.rectangle(
-            [
-                text_x - 20,
-                text_y - 20,
-                text_x + text_area_width + 20,
-                text_y + text_area_height + 20,
-            ],
-            fill=(0, 0, 0, 180),
-        )
-
-        # Combine overlay with main image
-        result_image = Image.alpha_composite(
-            result_image.convert("RGBA"), overlay
-        ).convert("RGB")
-        draw = ImageDraw.Draw(result_image)
-
-        # Draw title
+        # Draw text
         current_y = text_y
-        draw.text(
-            (text_x, current_y),
-            f"Track: {track}",
-            font=font_medium,
-            fill=(255, 255, 255),
-        )
-        current_y += 50
 
-        # Draw each lap time
+        # Track title
+        _draw_text_bitmap(
+            pixels,
+            width,
+            height,
+            text_x,
+            current_y,
+            f"Track: {track[:50]}",
+            (255, 255, 255),
+        )
+        current_y += 40
+
+        # Lap times
         for lap in lap_times:
             lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
             color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
-            draw.text((text_x, current_y), lap_text, font=font_medium, fill=color)
-            current_y += 50
+            _draw_text_bitmap(
+                pixels, width, height, text_x, current_y, lap_text[:50], color
+            )
+            current_y += 30
 
-        # Draw separator line
-        draw.line(
-            [(text_x, current_y), (text_x + text_area_width - 40, current_y)],
-            fill=(255, 255, 255),
-            width=2,
+        # Separator line
+        _draw_filled_rect(
+            pixels,
+            width,
+            height,
+            text_x,
+            current_y + 10,
+            text_x + 400,
+            current_y + 12,
+            (255, 255, 255),
         )
-        current_y += 20
+        current_y += 40
 
-        # Draw total time
-        draw.text(
-            (text_x, current_y),
+        # Total time
+        _draw_text_bitmap(
+            pixels,
+            width,
+            height,
+            text_x,
+            current_y,
             f"Total: {total_time_str}",
-            font=font_large,
-            fill=(100, 255, 100),
+            (100, 255, 100),
         )
 
         # Generate output filename
@@ -1102,7 +2163,7 @@ def _create_lap_times_image(base_path, run_number, track, final_screenshot_path=
         output_path = os.path.join(base_path, output_filename)
 
         # Save the image
-        result_image.save(output_path, "PNG")
+        _save_png_file(pixels, width, height, output_path)
         obs.script_log(obs.LOG_INFO, f"Created lap times image: {output_filename}")
 
         return output_path

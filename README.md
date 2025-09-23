@@ -33,7 +33,6 @@ Before setting up this script, ensure you have:
 
 1. **OBS Studio** (latest version recommended)
 2. **Advanced Scene Switcher Plugin** - Download from [GitHub](https://github.com/WarmUpTill/SceneSwitcher)
-3. **PIL/Pillow** (optional, for lap times image generation) - Install with `pip install Pillow` or run `install_dependencies.py`
 
 ## Installation
 
@@ -58,23 +57,7 @@ Or download the repository as a ZIP file:
 2. Install the plugin following the instructions in the repository
 3. Restart OBS Studio after installation
 
-### Step 3: Install Dependencies (Optional)
-
-For lap times image generation features, install PIL/Pillow:
-
-```bash
-python install_dependencies.py
-```
-
-Or manually install with pip:
-
-```bash
-pip install Pillow
-```
-
-**Note**: The script will work without PIL/Pillow, but lap times image generation will be disabled.
-
-### Step 4: Add the Script
+### Step 3: Add the Script
 
 1. Open OBS Studio
 2. Go to **Tools** → **Scripts**
@@ -364,17 +347,21 @@ Lap times are saved to `lap_times.csv` in your configured base path with these c
 
 #### Lap Times Images
 
-When PIL/Pillow is installed, the system automatically generates composite images when a final lap is saved:
+The system automatically generates PNG images showing lap time summaries when a final lap is saved:
 
 - **Automatic Generation**: Triggered when saving a lap with "Is Final Lap" checked
 - **Manual Generation**: Use the "MKW Generate Lap Times Image" action to create images from existing data
+- **Background**: Detects the most recent screenshot and logs its availability (screenshot background loading temporarily disabled due to PNG format complexity)
 - **File Format**: Images saved as `LapTimes_[Track]_Run[X]_[timestamp].png`
-- **Content**: Shows all lap times overlaid on the most recent screenshot with:
+- **Content**: Clean image with:
+  - Dark background (800x600)
   - Track name at the top
   - Individual lap times (final lap highlighted in yellow)
   - Total race time at the bottom
-  - Semi-transparent dark background for text readability
-- **Base Image**: Uses the most recent screenshot, or creates a blank image if none found
+  - Black background for optimal text readability
+- **Pure Python**: Uses only core Python libraries (no external dependencies required)
+- **Enhanced Font**: Complete 8x8 bitmap font supporting all letters, numbers, and common symbols
+- **Script Button**: "Create Image for Last Final Lap" button in script properties for manual generation
 
 #### Using Variables
 
