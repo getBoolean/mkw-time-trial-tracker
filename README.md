@@ -1,4 +1,4 @@
-# mk-time-trial-tracker
+# mkw-time-trial-tracker
 
 A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plugin that provides automatic track detection and lap time recording for Mario Kart World time trials.
 
