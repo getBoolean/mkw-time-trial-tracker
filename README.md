@@ -2,7 +2,7 @@
 
 A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plugin that provides automatic track detection and lap time recording for Mario Kart World time trials.
 
-![Macro Setup Guide](docs/Splits_Cheep_Cheep_Falls_Run-136.png)
+![Macro Setup Guide](docs/Splits_Cheep_Cheep_Falls_Run.png)
 
 ## Quick setup
 
