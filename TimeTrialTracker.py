@@ -1282,6 +1282,101 @@ def _get_best_worst_lap_times(base_path, track_name, shrooms_count, run_number):
         return {}, {}
 
 
+def _get_best_worst_total_times(base_path, track_name, shrooms_count, run_number):
+    """Calculate best and worst total times for a specific track with specific shroom count."""
+    csv_path = _csv_file_path(base_path)
+    if not os.path.exists(csv_path):
+        return None, None
+
+    try:
+        headers, existing = _read_csv_data(csv_path)
+
+        # Group runs by run number for the specific track and shroom count (excluding current run)
+        track_runs = {}
+        for r in existing:
+            if (
+                str(r.get("Track", "")).strip() == track_name
+                and str(r.get("Shrooms", "")).strip() == str(shrooms_count)
+                and str(r.get("RunNumber", "")).strip() != str(run_number)
+            ):
+                current_run = str(r.get("RunNumber", ""))
+                if current_run not in track_runs:
+                    track_runs[current_run] = []
+                track_runs[current_run].append(r)
+
+        # Calculate total time for each run
+        run_totals = []
+        for run_number_key, run_laps in track_runs.items():
+            total_seconds = 0.0
+            valid_run = True
+
+            for lap in run_laps:
+                lap_time_seconds = lap.get("LapTimeSeconds", "")
+                if lap_time_seconds:
+                    try:
+                        seconds_val = float(lap_time_seconds)
+                        total_seconds += seconds_val
+                    except (ValueError, TypeError):
+                        valid_run = False
+                        break
+                else:
+                    valid_run = False
+                    break
+
+            if valid_run and total_seconds > 0:
+                run_totals.append(total_seconds)
+
+        # Calculate best and worst
+        if run_totals:
+            best_total = min(run_totals)
+            worst_total = max(run_totals)
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Best total time for {track_name} with {shrooms_count} shrooms: {best_total}s",
+            )
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Worst total time for {track_name} with {shrooms_count} shrooms: {worst_total}s",
+            )
+            return best_total, worst_total
+        else:
+            return None, None
+
+    except Exception as e:
+        obs.script_log(
+            obs.LOG_WARNING, f"Error calculating best/worst total times: {e}"
+        )
+        return None, None
+
+
+def _get_total_time_color(current_total_seconds, best_total, worst_total):
+    """Determine the color for a total time based on best/worst performance."""
+    # If we don't have best/worst data, use normal green color
+    if best_total is None or worst_total is None:
+        return (100, 255, 100)  # normal green
+
+    try:
+        current_time = float(current_total_seconds)
+
+        # Check if this is the best time (within a small tolerance)
+        if abs(current_time - best_total) < 0.001:
+            return (100, 255, 100)  # bright green (new best!)
+
+        # Check if this is the worst time (within a small tolerance)
+        if abs(current_time - worst_total) > 0.001:
+            return (255, 100, 100)  # red (worst time)
+
+        # Check if this is close to the best time (within 0.3 seconds)
+        if current_time > best_total and current_time <= best_total + 0.3:
+            return (255, 255, 100)  # yellow (close to best)
+
+        # Otherwise, use normal white
+        return (255, 255, 255)  # normal white
+
+    except (ValueError, TypeError):
+        return (255, 255, 255)  # normal white (fallback)
+
+
 def _get_lap_color(
     lap_time_seconds, lap_number, best_times, worst_times, is_final=False
 ):
@@ -1292,22 +1387,22 @@ def _get_lap_color(
 
     # If we don't have best/worst data for this lap number, use white (normal)
     if best_time is None or worst_time is None:
-        return (0, 255, 0)  # green
+        return (100, 255, 100)  # green
 
     try:
         current_time = float(lap_time_seconds)
 
         # Check if this is the best time (within a small tolerance for floating point comparison)
         if abs(current_time - best_time) < 0.001:
-            return (0, 255, 0)  # green
+            return (100, 255, 100)  # green
 
         # Check if this is the worst time (within a small tolerance for floating point comparison)
-        if abs(current_time - worst_time) < 0.001:
-            return (255, 0, 0)  # red
+        if abs(current_time - worst_time) > 0.001:
+            return (255, 100, 100)  # red
 
         # Check if this is close to the best time (within 0.1 seconds but not the best)
         if current_time > best_time and current_time <= best_time + 0.1:
-            return (255, 255, 0)  # yellow (almost best)
+            return (255, 255, 100)  # yellow (almost best)
 
         # Otherwise, use white (normal)
         return (255, 255, 255)  # white
@@ -2669,6 +2764,15 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             else ({}, {})
         )
 
+        # Calculate best and worst total times for this track with the same shroom count
+        best_total, worst_total = (
+            _get_best_worst_total_times(
+                base_path, track_from_csv, shrooms_count, actual_run_number
+            )
+            if track_from_csv
+            else (None, None)
+        )
+
         # Load background image if available (prefer C loader on Windows)
         background_pixels, bg_width, bg_height = None, 0, 0
         if screenshot_path and os.path.exists(screenshot_path):
@@ -2864,12 +2968,13 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                 )
                 current_y += line_spacing
             current_y += line_spacing
+            total_color = _get_total_time_color(total_seconds, best_total, worst_total)
             texts.append(
                 (
                     text_x + base_padding,
                     current_y,
                     f"Total: {total_time_str}",
-                    (100, 255, 100),
+                    total_color,
                     c_scale,
                     base_padding,
                     (0, 0, 0, 220),
@@ -2949,12 +3054,13 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
                 )
                 current_y += line_spacing
             current_y += line_spacing
+            total_color = _get_total_time_color(total_seconds, best_total, worst_total)
             texts.append(
                 (
                     text_x + base_padding,
                     current_y,
                     f"Total: {total_time_str}",
-                    (100, 255, 100),
+                    total_color,
                     c_scale,
                     base_padding,
                     (0, 0, 0, 220),
