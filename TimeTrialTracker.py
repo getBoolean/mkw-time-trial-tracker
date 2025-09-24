@@ -1225,6 +1225,97 @@ def _on_create_last_image_button(props, prop):
 ###############################################################################
 
 
+def _get_best_worst_lap_times(base_path, track_name, shrooms_count, run_number):
+    """Calculate best and worst lap times for each lap number on a specific track with specific shroom count."""
+    csv_path = _csv_file_path(base_path)
+    if not os.path.exists(csv_path):
+        return {}, {}
+
+    try:
+        headers, existing = _read_csv_data(csv_path)
+
+        # Filter for the specific track and shroom count (include all laps, including final laps)
+        track_laps = [
+            r
+            for r in existing
+            if str(r.get("Track", "")).strip() == track_name
+            and str(r.get("Shrooms", "")).strip() == str(shrooms_count)
+            and str(r.get("RunNumber", "")).strip() != str(run_number)
+        ]
+
+        # Group by lap number
+        lap_times_by_number = {}
+        for lap in track_laps:
+            try:
+                lap_num = int(lap.get("LapNumber", 0))
+                lap_time_seconds = lap.get("LapTimeSeconds", "")
+                if lap_time_seconds:
+                    seconds_val = float(lap_time_seconds)
+                    if lap_num not in lap_times_by_number:
+                        lap_times_by_number[lap_num] = []
+                    lap_times_by_number[lap_num].append(seconds_val)
+            except (ValueError, TypeError):
+                continue
+
+        # Calculate best and worst for each lap number
+        best_times = {}
+        worst_times = {}
+        for lap_num, times in lap_times_by_number.items():
+            if times:
+                best_times[lap_num] = min(times)
+                worst_times[lap_num] = max(times)
+
+        for lap in track_laps:
+            lap_num = int(lap.get("LapNumber", 0))
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Best lap times for {track_name} Lap {lap_num} with {shrooms_count} shrooms: {best_times[lap_num]}",
+            )
+            obs.script_log(
+                obs.LOG_INFO,
+                f"Worst lap times for {track_name} Lap {lap_num} with {shrooms_count} shrooms: {worst_times[lap_num]}",
+            )
+
+        return best_times, worst_times
+    except Exception as e:
+        obs.script_log(obs.LOG_WARNING, f"Error calculating best/worst lap times: {e}")
+        return {}, {}
+
+
+def _get_lap_color(
+    lap_time_seconds, lap_number, best_times, worst_times, is_final=False
+):
+    """Determine the color for a lap time based on best/worst performance."""
+    # Get best and worst times for this lap number
+    best_time = best_times.get(lap_number)
+    worst_time = worst_times.get(lap_number)
+
+    # If we don't have best/worst data for this lap number, use white (normal)
+    if best_time is None or worst_time is None:
+        return (0, 255, 0)  # green
+
+    try:
+        current_time = float(lap_time_seconds)
+
+        # Check if this is the best time (within a small tolerance for floating point comparison)
+        if abs(current_time - best_time) < 0.001:
+            return (0, 255, 0)  # green
+
+        # Check if this is the worst time (within a small tolerance for floating point comparison)
+        if abs(current_time - worst_time) < 0.001:
+            return (255, 0, 0)  # red
+
+        # Check if this is close to the best time (within 0.1 seconds but not the best)
+        if current_time > best_time and current_time <= best_time + 0.1:
+            return (255, 255, 0)  # yellow (almost best)
+
+        # Otherwise, use white (normal)
+        return (255, 255, 255)  # white
+
+    except (ValueError, TypeError):
+        return (255, 255, 255)  # white (fallback)
+
+
 def _get_lap_times_for_run(base_path, run_number):
     """Get all lap times for a specific run from CSV data and return (laps, track)."""
     csv_path = _csv_file_path(base_path)
@@ -1289,6 +1380,7 @@ def _get_lap_times_for_run(base_path, run_number):
                             "lap_number": lap_num,
                             "time": display_time,
                             "is_final": is_final,
+                            "seconds": seconds_val,
                         }
                     )
                 except (ValueError, TypeError):
@@ -1304,6 +1396,7 @@ def _get_lap_times_for_run(base_path, run_number):
                                 "lap_number": lap_num,
                                 "time": lap_time_str,
                                 "is_final": is_final,
+                                "seconds": None,  # No seconds data available
                             }
                         )
 
@@ -2553,6 +2646,29 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             r for r in existing if str(r.get("RunNumber")) == str(actual_run_number)
         ]
 
+        # Determine shroom count for this run (use the most common value from run laps)
+        shrooms_count = 0
+        if run_laps:
+            shroom_counts = {}
+            for r in run_laps:
+                shrooms = str(r.get("Shrooms", "0")).strip()
+                try:
+                    shrooms_val = int(shrooms) if shrooms else 0
+                    shroom_counts[shrooms_val] = shroom_counts.get(shrooms_val, 0) + 1
+                except (ValueError, TypeError):
+                    shroom_counts[0] = shroom_counts.get(0, 0) + 1
+            if shroom_counts:
+                shrooms_count = max(shroom_counts.items(), key=lambda kv: kv[1])[0]
+
+        # Calculate best and worst lap times for this track with the same shroom count
+        best_times, worst_times = (
+            _get_best_worst_lap_times(
+                base_path, track_from_csv, shrooms_count, actual_run_number
+            )
+            if track_from_csv
+            else ({}, {})
+        )
+
         # Load background image if available (prefer C loader on Windows)
         background_pixels, bg_width, bg_height = None, 0, 0
         if screenshot_path and os.path.exists(screenshot_path):
@@ -2728,7 +2844,13 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             current_y += line_spacing * 2
             for lap in lap_times:
                 lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
-                color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
+                color = _get_lap_color(
+                    lap.get("seconds"),
+                    lap["lap_number"],
+                    best_times,
+                    worst_times,
+                    lap["is_final"],
+                )
                 texts.append(
                     (
                         text_x + base_padding,
@@ -2807,7 +2929,13 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             current_y += line_spacing * 2
             for lap in lap_times:
                 lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
-                color = (255, 255, 100) if lap["is_final"] else (255, 255, 255)
+                color = _get_lap_color(
+                    lap.get("seconds"),
+                    lap["lap_number"],
+                    best_times,
+                    worst_times,
+                    lap["is_final"],
+                )
                 texts.append(
                     (
                         text_x + base_padding,
