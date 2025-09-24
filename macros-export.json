@@ -36,8 +36,8 @@
         "dockId": "advss-macro-dock-2f70a751-451b-4bcf-9abb-c2721c14262d",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 715 }, { "pos": 236 }],
-      "macroElseActionSplitterPosition": [{ "pos": 204 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 693 }, { "pos": 229 }],
+      "macroElseActionSplitterPosition": [{ "pos": 197 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -522,7 +522,7 @@
       "pause": false,
       "parallel": true,
       "checkConditionsInParallel": false,
-      "onChange": true,
+      "onChange": false,
       "skipExecOnStart": false,
       "stopActionsIfNotDone": false,
       "useShortCircuitEvaluation": false,
@@ -546,8 +546,8 @@
         "dockId": "advss-macro-dock-f18053e5-719a-4644-9603-f5ae27b995fb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 825 }, { "pos": 126 }],
-      "macroElseActionSplitterPosition": [{ "pos": 94 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 508 }, { "pos": 170 }],
+      "macroElseActionSplitterPosition": [{ "pos": 138 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1905,8 +1905,8 @@
         "dockId": "advss-macro-dock-f57b71f2-8c2e-4bdb-95b4-68951d50d566",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 548 }, { "pos": 124 }],
-      "macroElseActionSplitterPosition": [{ "pos": 92 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 312 }, { "pos": 71 }],
+      "macroElseActionSplitterPosition": [{ "pos": 39 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2295,8 +2295,8 @@
         "dockId": "advss-macro-dock-b74e5e20-1cdc-4269-a8e8-01103cd52dfe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 401 }, { "pos": 233 }],
-      "macroElseActionSplitterPosition": [{ "pos": 201 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 428 }, { "pos": 250 }],
+      "macroElseActionSplitterPosition": [{ "pos": 218 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2304,7 +2304,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -2382,7 +2382,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -2693,8 +2693,8 @@
         "dockId": "advss-macro-dock-514cbc02-a8dc-4abb-973f-c529dbd81b17",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 190 }, { "pos": 444 }],
-      "macroElseActionSplitterPosition": [{ "pos": 412 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 203 }, { "pos": 475 }],
+      "macroElseActionSplitterPosition": [{ "pos": 443 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2980,8 +2980,8 @@
         "dockId": "advss-macro-dock-20ad15a1-6860-42b9-829e-d246e9dfb2fe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 40 }, { "pos": 594 }],
-      "macroElseActionSplitterPosition": [{ "pos": 562 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 43 }, { "pos": 635 }],
+      "macroElseActionSplitterPosition": [{ "pos": 603 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3827,8 +3827,8 @@
         "dockId": "ADVSS-Set Date Variables",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 177 }, { "pos": 495 }],
-      "macroElseActionSplitterPosition": [{ "pos": 463 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 179 }, { "pos": 499 }],
+      "macroElseActionSplitterPosition": [{ "pos": 467 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -4143,7 +4143,7 @@
     {
       "name": "Current TT Lap",
       "saveAction": 1,
-      "value": "0",
+      "value": "1",
       "defaultValue": ""
     },
     {
@@ -4155,7 +4155,7 @@
     {
       "name": "Next TT Lap",
       "saveAction": 1,
-      "value": "4",
+      "value": "2",
       "defaultValue": ""
     },
     { "name": "Current Lap OCR", "saveAction": 0, "defaultValue": "" },
@@ -4163,7 +4163,7 @@
     {
       "name": "TT Run Number",
       "saveAction": 1,
-      "value": "118",
+      "value": "141",
       "defaultValue": ""
     },
     { "name": "Current Lap Time OCR", "saveAction": 0, "defaultValue": "" },
@@ -4195,7 +4195,7 @@
     {
       "name": "CurrentCoins",
       "saveAction": 1,
-      "value": "00\n",
+      "value": "03\n",
       "defaultValue": ""
     },
     {
