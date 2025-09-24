@@ -8,13 +8,16 @@ A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plu
 
 1. Install Advanced Scene Switcher:
    - Download from the plugin's GitHub and install, then restart OBS.
-2. [Download](https://github.com/getBoolean/mk-time-trial-tracker/releases/latest) the bundle, extract, and add this script to OBS:
+2. Download and install Python 3.10 from the [official website](https://www.python.org/downloads/).
+3. Configure Advanced Scene Switcher to use Python 3.10
+   - OBS → **Tools** → **Scripts** → **Python Settings** → enter the path to the Python 3.10 directory
+4. [Download](https://github.com/getBoolean/mk-time-trial-tracker/releases/latest) the bundle, extract, and add this script to OBS:
    - OBS → **Tools** → **Scripts** → **+** → select `TimeTrialTracker.py`.
-3. Import the provided macro:
+5. Import the provided macro:
    - OBS → **Tools** → **Advanced Scene Switcher** → Macros (⋯) → **Import** → choose `macros-export.json` from the extracted bundle
-4. After import, adjust names/paths if needed (capture source name, project paths, save locations).
-5. In Advanced Scene Switcher, open all the imported macros and ensure the correct settings are applied. See [Macro Setup Guide](#macro-setup-guide) for details.
-6. Disable HDR in the Switch TV settings. The images included in the bundle were taken with HDR off.
+6. After import, adjust names/paths if needed (capture source name, project paths, save locations).
+7. In Advanced Scene Switcher, open all the imported macros and ensure the correct settings are applied. See [Macro Setup Guide](#macro-setup-guide) for details.
+8. Disable HDR in the Switch TV settings. The images included in the bundle were taken with HDR off.
 
 > **For detailed setup instructions with visual guides, see the [Macro Setup Guide](#macro-setup-guide) section below.**
 
@@ -36,6 +39,10 @@ Before setting up this script, ensure you have:
 2. **Advanced Scene Switcher Plugin** - Download from [GitHub](https://github.com/WarmUpTill/SceneSwitcher)
 
 ## Installation
+
+### Step 0: Install Python 3.10
+
+Download and install Python 3.10 from the [official website](https://www.python.org/downloads/).
 
 ### Step 1: Download from Releases (recommended)
 
@@ -101,8 +108,10 @@ Notes:
 1. Download the Advanced Scene Switcher plugin from the [official repository](https://github.com/WarmUpTill/SceneSwitcher)
 2. Install the plugin following the instructions in the repository
 3. Restart OBS Studio after installation
+4. Configure Advanced Scene Switcher to use Python 3.10
+   - OBS → **Tools** → **Scripts** → **Python Settings** → enter the path to the Python 3.10 directory
 
-### Step 4: Add the Script
+### Step 4: Add the Python Script
 
 1. Open OBS Studio
 2. Go to **Tools** → **Scripts**
