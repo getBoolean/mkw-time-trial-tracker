@@ -1362,13 +1362,13 @@ def _get_total_time_color(current_total_seconds, best_total, worst_total):
         if (current_time - best_total) < 0.001:
             return (100, 255, 100)  # bright green (new best!)
 
-        # Check if this is the worst time (within a small tolerance)
-        if (current_time - worst_total) > 0.001:
-            return (255, 100, 100)  # red (worst time)
-
         # Check if this is close to the best time (within 0.3 seconds)
         if current_time > best_total and current_time <= best_total + 0.3:
             return (255, 255, 100)  # yellow (close to best)
+
+        # Check if this is the worst time (within a small tolerance)
+        if (current_time - worst_total) > 0.001:
+            return (255, 100, 100)  # red (worst time)
 
         # Otherwise, use normal white
         return (255, 255, 255)  # normal white
@@ -1396,13 +1396,13 @@ def _get_lap_color(
         if (current_time - best_time) < 0.001:
             return (100, 255, 100)  # green
 
-        # Check if this is the worst time (within a small tolerance for floating point comparison)
-        if (current_time - worst_time) > 0.001:
-            return (255, 100, 100)  # red
-
         # Check if this is close to the best time (within 0.1 seconds but not the best)
         if current_time > best_time and current_time <= best_time + 0.1:
             return (255, 255, 100)  # yellow (almost best)
+
+        # Check if this is the worst time (within a small tolerance for floating point comparison)
+        if (current_time - worst_time) > 0.001:
+            return (255, 100, 100)  # red
 
         # Otherwise, use white (normal)
         return (255, 255, 255)  # white
