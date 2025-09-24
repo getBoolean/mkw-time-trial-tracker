@@ -1304,11 +1304,22 @@ def _get_best_worst_total_times(base_path, track_name, shrooms_count, run_number
                     track_runs[current_run] = []
                 track_runs[current_run].append(r)
 
-        # Calculate total time for each run
+        # Calculate total time for each run (only include runs with a final lap)
         run_totals = []
         for run_number_key, run_laps in track_runs.items():
             total_seconds = 0.0
             valid_run = True
+            has_final_lap = False
+
+            # Check if this run has a final lap
+            for lap in run_laps:
+                if str(lap.get("IsFinalLap", "")).lower() in ("true", "1"):
+                    has_final_lap = True
+                    break
+
+            # Only process runs that have a final lap
+            if not has_final_lap:
+                continue
 
             for lap in run_laps:
                 lap_time_seconds = lap.get("LapTimeSeconds", "")
