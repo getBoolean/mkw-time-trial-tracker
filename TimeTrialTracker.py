@@ -1460,6 +1460,8 @@ def _get_lap_times_for_run(base_path, run_number):
             lap_num = int(lap.get("LapNumber", 0))
             lap_time_seconds = lap.get("LapTimeSeconds", "")
             is_final = str(lap.get("IsFinalLap", "")).lower() in ("true", "1")
+            coins = int(lap.get("Coins", 0) or 0)
+            shrooms = int(lap.get("Shrooms", 0) or 0)
 
             if lap_time_seconds:
                 try:
@@ -1476,6 +1478,8 @@ def _get_lap_times_for_run(base_path, run_number):
                             "time": display_time,
                             "is_final": is_final,
                             "seconds": seconds_val,
+                            "coins": coins,
+                            "shrooms": shrooms,
                         }
                     )
                 except (ValueError, TypeError):
@@ -1492,6 +1496,8 @@ def _get_lap_times_for_run(base_path, run_number):
                                 "time": lap_time_str,
                                 "is_final": is_final,
                                 "seconds": None,  # No seconds data available
+                                "coins": coins,
+                                "shrooms": shrooms,
                             }
                         )
 
@@ -2947,7 +2953,16 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             )
             current_y += line_spacing * 2
             for lap in lap_times:
-                lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
+                # Format lap text with shrooms and coins: "Lap 1: 0:43.448 1s 0c"
+                shrooms_text = (
+                    f" {lap.get('Shrooms', 0)}s" if lap.get("Shrooms", 0) > 0 else ""
+                )
+                coins_text = (
+                    f" {lap.get('Coins', 0)}c" if lap.get("Coins", 0) > 0 else ""
+                )
+                lap_text = (
+                    f"Lap {lap['lap_number']}: {lap['time']}{shrooms_text}{coins_text}"
+                )
                 color = _get_lap_color(
                     lap.get("seconds"),
                     lap["lap_number"],
@@ -3033,7 +3048,16 @@ def _create_lap_times_image(base_path, run_number, final_screenshot_path=None):
             )
             current_y += line_spacing * 2
             for lap in lap_times:
-                lap_text = f"Lap {lap['lap_number']}: {lap['time']}"
+                # Format lap text with shrooms and coins: "Lap 1: 0:43.448 1s 0c"
+                shrooms_text = (
+                    f" {lap.get('shrooms', 0)}s" if lap.get("shrooms", 0) > 0 else ""
+                )
+                coins_text = (
+                    f" {lap.get('coins', 0)}c" if lap.get("coins", 0) > 0 else ""
+                )
+                lap_text = (
+                    f"Lap {lap['lap_number']}: {lap['time']}{shrooms_text}{coins_text}"
+                )
                 color = _get_lap_color(
                     lap.get("seconds"),
                     lap["lap_number"],
