@@ -187,8 +187,11 @@ Manually generates a composite image showing all lap times for a specific run ov
 You can import a ready-made macro setup as a starting point:
 
 1. In OBS, go to **Tools** → **Advanced Scene Switcher** → Macros.
-2. Open the Macros menu (⋯) → **Import** and select `macros-export.json` from this repo.
+2. Right click the Macros list → **Import** and select `macros-export.json` from this repo.
    - **Download**: [macros-export.json](./macros-export.json)
+
+   ![Import Macros](docs/import-macro.png)
+
 3. After import, adjust these items in all macros to match your setup:
    - **Capture source name**: Replace `AverMedia Live Gamer 4K 2.1` with your video capture source.
    - **File paths**: Update any `C:\dev\mk-time-trial-tracker\...` paths if your repo is saved elsewhere.
