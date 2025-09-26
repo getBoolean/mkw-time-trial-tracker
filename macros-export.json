@@ -36,8 +36,8 @@
         "dockId": "advss-macro-dock-2f70a751-451b-4bcf-9abb-c2721c14262d",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 388 }, { "pos": 127 }],
-      "macroElseActionSplitterPosition": [{ "pos": 95 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 502 }, { "pos": 163 }],
+      "macroElseActionSplitterPosition": [{ "pos": 131 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -159,8 +159,8 @@
         "dockId": "advss-macro-dock-7a3c172a-62b6-4768-99f8-ad22e426a33a",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 342 }, { "pos": 173 }],
-      "macroElseActionSplitterPosition": [{ "pos": 141 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 347 }, { "pos": 394 }],
+      "macroElseActionSplitterPosition": [{ "pos": 362 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -168,7 +168,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -196,7 +196,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": true,
             "customLabel": "Sees MKW Logo",
             "enabled": true,
@@ -276,7 +276,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": true,
             "customLabel": "Track Name",
             "enabled": true,
@@ -365,7 +365,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "Current Track OCR",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -401,7 +401,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -417,7 +417,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -472,7 +472,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "Current Track Filename Safe",
           "variable2Name": "Invalid variable selection",
           "strValue": "${IdentifiedTrack}",
           "numValue": { "value": 0.0, "type": 0 },
@@ -546,8 +546,8 @@
         "dockId": "advss-macro-dock-f57b71f2-8c2e-4bdb-95b4-68951d50d566",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 420 }, { "pos": 95 }],
-      "macroElseActionSplitterPosition": [{ "pos": 63 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 521 }, { "pos": 220 }],
+      "macroElseActionSplitterPosition": [{ "pos": 188 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -741,8 +741,8 @@
         "dockId": "advss-macro-dock-b31dad60-ace8-43db-ba17-0c5e6c63f13c",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 416 }, { "pos": 99 }],
-      "macroElseActionSplitterPosition": [{ "pos": 67 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 599 }, { "pos": 142 }],
+      "macroElseActionSplitterPosition": [{ "pos": 110 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -867,7 +867,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "Current Lap Time OCR",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -936,8 +936,8 @@
         "dockId": "advss-macro-dock-f18053e5-719a-4644-9603-f5ae27b995fb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 443 }, { "pos": 72 }],
-      "macroElseActionSplitterPosition": [{ "pos": 40 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 567 }, { "pos": 174 }],
+      "macroElseActionSplitterPosition": [{ "pos": 142 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1142,7 +1142,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "CurrentCoins",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1211,8 +1211,8 @@
         "dockId": "advss-macro-dock-2fe8abb4-7fe8-4e91-ac74-dd52a1c9ba87",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 559 }, { "pos": 177 }],
-      "macroElseActionSplitterPosition": [{ "pos": 145 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 563 }, { "pos": 178 }],
+      "macroElseActionSplitterPosition": [{ "pos": 146 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1406,8 +1406,8 @@
         "dockId": "advss-macro-dock-658b175a-b8ed-4e86-a2e9-77e55d6eaca7",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 441 }, { "pos": 134 }],
-      "macroElseActionSplitterPosition": [{ "pos": 102 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 568 }, { "pos": 173 }],
+      "macroElseActionSplitterPosition": [{ "pos": 141 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1532,7 +1532,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "UsedShrooms",
           "variable2Name": "Invalid variable selection",
           "strValue": "1",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1601,8 +1601,8 @@
         "dockId": "advss-macro-dock-936deea9-dc34-44e9-bc72-26b533707acb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 567 }, { "pos": 169 }],
-      "macroElseActionSplitterPosition": [{ "pos": 137 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 554 }, { "pos": 187 }],
+      "macroElseActionSplitterPosition": [{ "pos": 155 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1727,7 +1727,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "UsedShrooms",
           "variable2Name": "Invalid variable selection",
           "strValue": "0",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1796,8 +1796,8 @@
         "dockId": "advss-macro-dock-59a00cb7-f8f3-49c5-8903-887c9539efa1",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 687 }, { "pos": 195 }],
-      "macroElseActionSplitterPosition": [{ "pos": 163 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 513 }, { "pos": 228 }],
+      "macroElseActionSplitterPosition": [{ "pos": 196 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1926,7 +1926,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "UsedShrooms",
           "variable2Name": "Invalid variable selection",
           "strValue": "3",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1995,8 +1995,8 @@
         "dockId": "advss-macro-dock-f3b88656-3c9a-484e-8108-ae8fdf0f9a07",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 411 }, { "pos": 164 }],
-      "macroElseActionSplitterPosition": [{ "pos": 132 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 530 }, { "pos": 211 }],
+      "macroElseActionSplitterPosition": [{ "pos": 179 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2190,8 +2190,8 @@
         "dockId": "advss-macro-dock-15492c60-f9ad-4be9-940a-9f31d26bf8fb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 454 }, { "pos": 121 }],
-      "macroElseActionSplitterPosition": [{ "pos": 89 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 585 }, { "pos": 156 }],
+      "macroElseActionSplitterPosition": [{ "pos": 124 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2476,7 +2476,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "IsGhost",
           "variable2Name": "Invalid variable selection",
           "strValue": "false",
           "numValue": { "value": 0.0, "type": 0 },
@@ -2545,8 +2545,8 @@
         "dockId": "advss-macro-dock-aa508f01-e444-4046-a148-05c4834243fa",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 649 }, { "pos": 233 }],
-      "macroElseActionSplitterPosition": [{ "pos": 201 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 545 }, { "pos": 196 }],
+      "macroElseActionSplitterPosition": [{ "pos": 164 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2671,7 +2671,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Year",
+          "variableName": "IsGhost",
           "variable2Name": "Invalid variable selection",
           "strValue": "true",
           "numValue": { "value": 0.0, "type": 0 },
@@ -2740,8 +2740,8 @@
         "dockId": "advss-macro-dock-41e51690-43a0-4a4e-ad74-f021cc964a2c",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 393 }, { "pos": 182 }],
-      "macroElseActionSplitterPosition": [{ "pos": 150 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 506 }, { "pos": 235 }],
+      "macroElseActionSplitterPosition": [{ "pos": 203 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3065,8 +3065,8 @@
         "dockId": "advss-macro-dock-b74e5e20-1cdc-4269-a8e8-01103cd52dfe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 453 }, { "pos": 122 }],
-      "macroElseActionSplitterPosition": [{ "pos": 90 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 355 }, { "pos": 386 }],
+      "macroElseActionSplitterPosition": [{ "pos": 354 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3445,8 +3445,8 @@
         "dockId": "advss-macro-dock-514cbc02-a8dc-4abb-973f-c529dbd81b17",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 374 }, { "pos": 201 }],
-      "macroElseActionSplitterPosition": [{ "pos": 169 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 482 }, { "pos": 259 }],
+      "macroElseActionSplitterPosition": [{ "pos": 227 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3732,8 +3732,8 @@
         "dockId": "advss-macro-dock-20ad15a1-6860-42b9-829e-d246e9dfb2fe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 36 }, { "pos": 539 }],
-      "macroElseActionSplitterPosition": [{ "pos": 507 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 46 }, { "pos": 695 }],
+      "macroElseActionSplitterPosition": [{ "pos": 663 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -4780,8 +4780,8 @@
         "dockId": "ADVSS-Set Date Variables",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 194 }, { "pos": 542 }],
-      "macroElseActionSplitterPosition": [{ "pos": 510 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 152 }, { "pos": 423 }],
+      "macroElseActionSplitterPosition": [{ "pos": 391 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -5096,7 +5096,7 @@
     {
       "name": "Current TT Lap",
       "saveAction": 1,
-      "value": "0",
+      "value": "1",
       "defaultValue": ""
     },
     {
@@ -5108,7 +5108,7 @@
     {
       "name": "Next TT Lap",
       "saveAction": 1,
-      "value": "3",
+      "value": "2",
       "defaultValue": ""
     },
     { "name": "Current Lap OCR", "saveAction": 0, "defaultValue": "" },
@@ -5116,7 +5116,7 @@
     {
       "name": "TT Run Number",
       "saveAction": 1,
-      "value": "951",
+      "value": "953",
       "defaultValue": ""
     },
     { "name": "Current Lap Time OCR", "saveAction": 0, "defaultValue": "" },
