@@ -201,7 +201,8 @@ Determines if a race is currently active, allowing more efficient use of resourc
 
 1. Configure the path to the `lapFlag.png` file
 2. Configure the `Perform check only in area` section to the flag next to the lap counter
-3. Test the macro with `Show match`
+3. Ensure `Run macro in parallel to other macros` is disabled
+4. Test the macro with `Show match`
 
 #### Current Track Detection
 
@@ -283,6 +284,7 @@ The system tracks mushroom usage with separate macros for different counts:
 1. For `1shroom`, `2shrooms`, and `3shrooms` macros:
    - Configure the `Perform check only in area` section to the items section
    - Configure the path to the corresponding `1shroom.png`, `2shrooms.png`, or `3shrooms.png` file
+   - Ensure `Run macro in parallel to other macros` is disabled
 1. No changes needed for the `0shrooms` macro
 
 **Actions Setup**:
