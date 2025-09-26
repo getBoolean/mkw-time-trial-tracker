@@ -1,10 +1,10 @@
-# mkw-time-trial-tracker
+# mkw-time-trial-tracker  <!-- omit in toc -->
 
 A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plugin that provides automatic track detection and lap time recording for Mario Kart World time trials.
 
 ![Macro Setup Guide](docs/Splits_Cheep_Cheep_Falls_Run.png)
 
-## Quick setup
+## Quick setup  <!-- omit in toc -->
 
 1. Install Advanced Scene Switcher:
    - Download from the plugin's GitHub and install, then restart OBS.
@@ -21,7 +21,7 @@ A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plu
 
 > **For detailed setup instructions with visual guides, see the [Macro Setup Guide](#macro-setup-guide) section below.**
 
-## Features
+## Features  <!-- omit in toc -->
 
 - **Track Autocorrect**: Automatically identifies and corrects track names from OCR text
 - **Lap Time Recording**: Save lap times to CSV with automatic calculations
@@ -31,52 +31,48 @@ A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plu
 - **Queue System**: Automatic queuing when CSV files are locked, and an option to manually process the queue
 - **Variable-Based Inputs**: Use Advanced Scene Switcher variables as inputs for the macro actions
 
-## Table of Contents
+## Table of Contents  <!-- omit in toc -->
 
-- [mkw-time-trial-tracker](#mkw-time-trial-tracker)
-  - [Quick setup](#quick-setup)
-  - [Features](#features)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-    - [Step 0: Install Python 3.10](#step-0-install-python-310)
-    - [Step 1: Download from Releases](#step-1-download-from-releases)
-    - [Step 2: Enable the C++ backend](#step-2-enable-the-c-backend)
-    - [Step 3: Install Advanced Scene Switcher](#step-3-install-advanced-scene-switcher)
-    - [Step 4: Add the Python Script](#step-4-add-the-python-script)
-  - [Usage](#usage)
-    - [Quick start: import provided macros (recommended)](#quick-start-import-provided-macros-recommended)
-    - [Available Actions](#available-actions)
-      - [1. MKW Track Action](#1-mkw-track-action)
-      - [2. MKW Save Lap Action](#2-mkw-save-lap-action)
-      - [3. MKW Move Old Images Action](#3-mkw-move-old-images-action)
-      - [4. MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action)
-  - [Macro Setup Guide](#macro-setup-guide)
-    - [Overview of Macro System](#overview-of-macro-system)
-    - [1. Game State Detection Macros](#1-game-state-detection-macros)
-      - [Racing Status Detection](#racing-status-detection)
-      - [Current Track Detection](#current-track-detection)
-      - [Current Time Detection](#current-time-detection)
-      - [Coins Detection](#coins-detection)
-      - [Mushroom Usage Detection](#mushroom-usage-detection)
-      - [Ghost Replay Detection](#ghost-replay-detection)
-    - [2. Control Macros](#2-control-macros)
-      - [Time Trial Start](#time-trial-start)
-    - [3. Screenshot/Record Data Macros](#3-screenshotrecord-data-macros)
-      - [Lap End](#lap-end)
-      - [Time Trial Finish](#time-trial-finish)
-    - [Configuration Tips](#configuration-tips)
-      - [File Paths](#file-paths)
-      - [Testing and Calibration](#testing-and-calibration)
-    - [Troubleshooting Macro Issues](#troubleshooting-macro-issues)
-    - [Data Output](#data-output)
-      - [CSV File Structure](#csv-file-structure)
-      - [Using Variables](#using-variables)
-  - [Contributing](#contributing)
-  - [Troubleshooting](#troubleshooting)
-    - [Common Issues](#common-issues)
-    - [Debug Information](#debug-information)
-  - [For Developers](#for-developers)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Step 0: Install Python 3.10](#step-0-install-python-310)
+  - [Step 1: Download from Releases](#step-1-download-from-releases)
+  - [Step 2: Enable the C++ backend](#step-2-enable-the-c-backend)
+  - [Step 3: Install Advanced Scene Switcher](#step-3-install-advanced-scene-switcher)
+  - [Step 4: Add the Python Script](#step-4-add-the-python-script)
+- [Usage](#usage)
+  - [Quick start: import provided macros (recommended)](#quick-start-import-provided-macros-recommended)
+  - [Available Actions](#available-actions)
+    - [1. MKW Track Action](#1-mkw-track-action)
+    - [2. MKW Save Lap Action](#2-mkw-save-lap-action)
+    - [3. MKW Move Old Images Action](#3-mkw-move-old-images-action)
+    - [4. MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action)
+- [Macro Setup Guide](#macro-setup-guide)
+  - [Overview of Macro System](#overview-of-macro-system)
+  - [1. Game State Detection Macros](#1-game-state-detection-macros)
+    - [Racing Status Detection](#racing-status-detection)
+    - [Current Track Detection](#current-track-detection)
+    - [Current Time Detection](#current-time-detection)
+    - [Coins Detection](#coins-detection)
+    - [Mushroom Usage Detection](#mushroom-usage-detection)
+    - [Ghost Replay Detection](#ghost-replay-detection)
+  - [2. Control Macros](#2-control-macros)
+    - [Time Trial Start](#time-trial-start)
+  - [3. Screenshot/Record Data Macros](#3-screenshotrecord-data-macros)
+    - [Lap End](#lap-end)
+    - [Time Trial Finish](#time-trial-finish)
+  - [Configuration Tips](#configuration-tips)
+    - [File Paths](#file-paths)
+    - [Testing and Calibration](#testing-and-calibration)
+  - [Troubleshooting Macro Issues](#troubleshooting-macro-issues)
+  - [Data Output](#data-output)
+    - [CSV File Structure](#csv-file-structure)
+    - [Using Variables](#using-variables)
+- [Contributing](#contributing)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Debug Information](#debug-information)
+- [For Developers](#for-developers)
 
 ## Prerequisites
 
