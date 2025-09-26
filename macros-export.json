@@ -36,8 +36,8 @@
         "dockId": "advss-macro-dock-2f70a751-451b-4bcf-9abb-c2721c14262d",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 664 }, { "pos": 218 }],
-      "macroElseActionSplitterPosition": [{ "pos": 186 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 388 }, { "pos": 127 }],
+      "macroElseActionSplitterPosition": [{ "pos": 95 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -159,8 +159,8 @@
         "dockId": "advss-macro-dock-7a3c172a-62b6-4768-99f8-ad22e426a33a",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 813 }, { "pos": 69 }],
-      "macroElseActionSplitterPosition": [{ "pos": 37 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 342 }, { "pos": 173 }],
+      "macroElseActionSplitterPosition": [{ "pos": 141 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -365,7 +365,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Current Track OCR",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -472,7 +472,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Current Track Filename Safe",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "${IdentifiedTrack}",
           "numValue": { "value": 0.0, "type": 0 },
@@ -546,8 +546,8 @@
         "dockId": "advss-macro-dock-f57b71f2-8c2e-4bdb-95b4-68951d50d566",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 719 }, { "pos": 163 }],
-      "macroElseActionSplitterPosition": [{ "pos": 131 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 420 }, { "pos": 95 }],
+      "macroElseActionSplitterPosition": [{ "pos": 63 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -741,8 +741,8 @@
         "dockId": "advss-macro-dock-b31dad60-ace8-43db-ba17-0c5e6c63f13c",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 713 }, { "pos": 169 }],
-      "macroElseActionSplitterPosition": [{ "pos": 137 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 416 }, { "pos": 99 }],
+      "macroElseActionSplitterPosition": [{ "pos": 67 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -867,7 +867,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Current Lap Time OCR",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -936,8 +936,8 @@
         "dockId": "advss-macro-dock-f18053e5-719a-4644-9603-f5ae27b995fb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 759 }, { "pos": 123 }],
-      "macroElseActionSplitterPosition": [{ "pos": 91 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 443 }, { "pos": 72 }],
+      "macroElseActionSplitterPosition": [{ "pos": 40 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1142,7 +1142,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "CurrentCoins",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1211,8 +1211,8 @@
         "dockId": "advss-macro-dock-2fe8abb4-7fe8-4e91-ac74-dd52a1c9ba87",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 670 }, { "pos": 212 }],
-      "macroElseActionSplitterPosition": [{ "pos": 180 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 559 }, { "pos": 177 }],
+      "macroElseActionSplitterPosition": [{ "pos": 145 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1406,8 +1406,8 @@
         "dockId": "advss-macro-dock-658b175a-b8ed-4e86-a2e9-77e55d6eaca7",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 676 }, { "pos": 206 }],
-      "macroElseActionSplitterPosition": [{ "pos": 174 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 564 }, { "pos": 172 }],
+      "macroElseActionSplitterPosition": [{ "pos": 140 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1415,7 +1415,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -1532,7 +1532,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "UsedShrooms",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "1",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1601,8 +1601,8 @@
         "dockId": "advss-macro-dock-936deea9-dc34-44e9-bc72-26b533707acb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 679 }, { "pos": 203 }],
-      "macroElseActionSplitterPosition": [{ "pos": 171 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 567 }, { "pos": 169 }],
+      "macroElseActionSplitterPosition": [{ "pos": 137 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1727,7 +1727,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "UsedShrooms",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "0",
           "numValue": { "value": 0.0, "type": 0 },
@@ -1926,7 +1926,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "UsedShrooms",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "3",
           "numValue": { "value": 0.0, "type": 0 },
@@ -2476,7 +2476,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "IsGhost",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "false",
           "numValue": { "value": 0.0, "type": 0 },
@@ -2671,7 +2671,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "IsGhost",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "true",
           "numValue": { "value": 0.0, "type": 0 },
@@ -2765,7 +2765,7 @@
               "version": 1
             }
           },
-          "variableName": "IsGhost",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "false",
           "numValue": 0.0,
@@ -3065,8 +3065,8 @@
         "dockId": "advss-macro-dock-b74e5e20-1cdc-4269-a8e8-01103cd52dfe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 29 }, { "pos": 853 }],
-      "macroElseActionSplitterPosition": [{ "pos": 821 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 24 }, { "pos": 712 }],
+      "macroElseActionSplitterPosition": [{ "pos": 680 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3090,7 +3090,7 @@
               "version": 1
             }
           },
-          "variableName": "IsGhost",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "false",
           "numValue": 0.0,
@@ -3143,7 +3143,7 @@
               "version": 1
             }
           },
-          "variableName": "Next TT Lap",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "1",
           "numValue": 0.0,
@@ -3168,7 +3168,7 @@
               "version": 1
             }
           },
-          "variableName": "Current TT Lap",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "0",
           "numValue": 0.0,
@@ -3193,7 +3193,7 @@
               "version": 1
             }
           },
-          "variableName": "Current Track",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "0",
           "numValue": 0.0,
@@ -3445,8 +3445,8 @@
         "dockId": "advss-macro-dock-514cbc02-a8dc-4abb-973f-c529dbd81b17",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 224 }, { "pos": 658 }],
-      "macroElseActionSplitterPosition": [{ "pos": 626 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 523 }, { "pos": 213 }],
+      "macroElseActionSplitterPosition": [{ "pos": 181 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3498,7 +3498,7 @@
               "version": 1
             }
           },
-          "variableName": "Current TT Lap",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "0",
           "numValue": 0.0,
@@ -3732,8 +3732,8 @@
         "dockId": "advss-macro-dock-20ad15a1-6860-42b9-829e-d246e9dfb2fe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 55 }, { "pos": 827 }],
-      "macroElseActionSplitterPosition": [{ "pos": 795 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 46 }, { "pos": 690 }],
+      "macroElseActionSplitterPosition": [{ "pos": 658 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -4780,8 +4780,8 @@
         "dockId": "ADVSS-Set Date Variables",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 215 }, { "pos": 599 }],
-      "macroElseActionSplitterPosition": [{ "pos": 567 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 233 }, { "pos": 649 }],
+      "macroElseActionSplitterPosition": [{ "pos": 617 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -4875,7 +4875,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Month",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -4918,7 +4918,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Day",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -4961,7 +4961,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Hour",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -5004,7 +5004,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Minute",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -5047,7 +5047,7 @@
             "version": 1
           },
           "id": "variable",
-          "variableName": "Second",
+          "variableName": "Year",
           "variable2Name": "Invalid variable selection",
           "strValue": "",
           "numValue": { "value": 0.0, "type": 0 },
@@ -5156,12 +5156,6 @@
       "saveAction": 1,
       "value": "3",
       "defaultValue": ""
-    },
-    {
-      "name": "Script Repo Path",
-      "saveAction": 1,
-      "value": "C:/dev/mk-time-trial-tracker",
-      "defaultValue": "C:/dev/mk-time-trial-tracker"
     },
     { "name": "Current Track OCR", "saveAction": 0, "defaultValue": "" },
     { "name": "IsGhost", "saveAction": 1, "value": "false", "defaultValue": "" }
