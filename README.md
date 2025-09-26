@@ -100,6 +100,29 @@ This is highly recommended if you will be using the splits image generation feat
 
 ## Usage
 
+A number of custom Advanced Scene Switcher macros are provided and can integrate with your existing OBS setup.
+
+### Quick start: import provided macros (recommended)
+
+You can import a ready-made macro setup as a starting point:
+
+1. In OBS, go to **Tools** → **Advanced Scene Switcher** → Macros.
+2. Right click the Macros list → **Import** and select `macros-export.json` from this repo.
+   - **Download**: [macros-export.json](./macros-export.json)
+
+   ![Import Macros](docs/import-macro.png)
+
+3. After import, adjust these items in all macros to match your setup:
+   - **Capture source name**: Replace `AverMedia Live Gamer 4K 2.1` with your video capture source.
+   - **File paths**: Update any `C:\dev\mk-time-trial-tracker\...` paths if your repo is saved elsewhere.
+   - **Screenshot save paths**: Change `G:\OBS\Mario Kart World\...` to your desired location.
+   - **OCR regions/colors**: The macros include example OCR areas and colors tuned to a 4K capture; tweak the areas and thresholds for your resolution/theme if needed.
+   - **Script action**: Ensure the actions `MKW Track`, `MKW Save Lap`, and `MKW Move Old Images` are present and configured correctly.
+   - **Adjust pixel selections**: The pixel positions for every "Perform check only in area` section are for 2160p (4K) resolution videos. If your capture card is not 4K, you will have to do a little math to get the approximate value.
+      - 1080p: 4k pixels / 2
+      - 1440p: 4k pixels / 3 * 2
+      - Others: 4k pixels / (2160/width)
+
 ### Available Actions
 
 The script provides four main Advanced Scene Switcher actions:
@@ -157,27 +180,6 @@ Manually generates a composite image showing all lap times for a specific run ov
 **Example output:**
 
 ![Lap Splits Image](docs/LapTimes_image.png)
-
-### Quick start: import provided macros (recommended)
-
-You can import a ready-made macro setup as a starting point:
-
-1. In OBS, go to **Tools** → **Advanced Scene Switcher** → Macros.
-2. Right click the Macros list → **Import** and select `macros-export.json` from this repo.
-   - **Download**: [macros-export.json](./macros-export.json)
-
-   ![Import Macros](docs/import-macro.png)
-
-3. After import, adjust these items in all macros to match your setup:
-   - **Capture source name**: Replace `AverMedia Live Gamer 4K 2.1` with your video capture source.
-   - **File paths**: Update any `C:\dev\mk-time-trial-tracker\...` paths if your repo is saved elsewhere.
-   - **Screenshot save paths**: Change `G:\OBS\Mario Kart World\...` to your desired location.
-   - **OCR regions/colors**: The macros include example OCR areas and colors tuned to a 4K capture; tweak the areas and thresholds for your resolution/theme if needed.
-   - **Script action**: Ensure the actions `MKW Track`, `MKW Save Lap`, and `MKW Move Old Images` are present and configured correctly.
-   - **Adjust pixel selections**: The pixel positions for every "Perform check only in area` section are for 2160p (4K) resolution videos. If your capture card is not 4K, you will have to do a little math to get the approximate value.
-      - 1080p: 4k pixels / 2
-      - 1440p: 4k pixels / 3 * 2
-      - Others: 4k pixels / (2160/width)
 
 ## Macro Setup Guide
 
