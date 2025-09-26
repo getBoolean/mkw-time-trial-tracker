@@ -78,7 +78,6 @@ A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plu
     - [Debug Information](#debug-information)
   - [For Developers](#for-developers)
 
-
 ## Prerequisites
 
 Before setting up this script, ensure you have:
@@ -431,6 +430,7 @@ Captures screenshots at the end of each lap and saves the lap time data.
 
 1. Optionally take a screenshot. This is not used by the script, it is for your own records and to double check the lap time data.
    - The name should follow a pattern like `Lap-*.png`
+   - If you want it moved to the `lap times` subfolder with the `MKW Move Old Images` action from the [Time Trial Start](#time-trial-start) section, ensure it conforms to the naming pattern (e.g., starts with `Lap-` and ends with `.png`)
    - You can use variables in the file/folder path, e.g., `Lap-Screenshot_Track-${Current Track Filename Safe}_Run-${TT Run Number}_Lap-${Current TT Lap}.png`
 1. Configure the `MKW Save Lap` action with the corresponding variables
    - Ensure `Is Final Lap` is set to `false`
@@ -456,7 +456,8 @@ Captures final screenshot when time trial completes.
 **Actions Setup**:
 
 1. Take a screenshot for the splits image, ensure it ends with `-Final.png`
-   - If you want it moved to the `lap times` subfolder with the `MKW Move Old Images` action from the [Time Trial Start](#time-trial-start) section, ensure it conforms to the naming pattern (e.g., starts with `Lap-` and ends with `.png`)
+   - It should follow the same naming pattern as the [Lap End](#lap-end) section, but ends with `-Final.png` instead of `.png`
+   - It is important to include `Run-${TT Run Number}` in the filename for the [MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action) action to work.
 1. Configure the `MKW Save Lap` action with the corresponding variables
    - Ensure `Is Final Lap` is set to `true`
    - Enable `Create Split Image after Final Lap` for a sharable splits image.
@@ -468,21 +469,21 @@ Captures final screenshot when time trial completes.
 #### File Paths
 
 1. **Screenshot Locations**: Organize screenshots by track using variables: `G:\OBS\Mario Kart World\${Current Track}\`
-2. **CSV Output**: Configure base path in script properties for CSV file location
-3. **Image Organization**: Use `MKW Move Old Images` action to keep screenshots organized
+1. **CSV Output**: Configure base path in script properties for CSV file location
+1. **Image Organization**: Use `MKW Move Old Images` action to keep screenshots organized
 
 #### Testing and Calibration
 
 1. **Test Each Macro**: Run through a complete time trial to ensure all macros trigger correctly
-2. **Check OCR Accuracy**: Verify that text recognition works reliably with your setup
-3. **Validate Data Output**: Confirm that lap times and other data are recorded accurately in CSV files
+1. **Check OCR Accuracy**: Verify that text recognition works reliably with your setup
+1. **Validate Data Output**: Confirm that lap times and other data are recorded accurately in CSV files
 
 ### Troubleshooting Macro Issues
 
 1. **OCR Not Triggering**: Check OCR region positioning and color thresholds
-2. **Variables Not Found**: Verify variable names match exactly between macros and script actions
-3. **Screenshots Not Capturing**: Confirm source names and file paths are correct
-4. **Data Not Recording**: Check that MKW script actions are properly configured with variable inputs
+1. **Variables Not Found**: Verify variable names match exactly between macros and script actions
+1. **Screenshots Not Capturing**: Confirm source names and file paths are correct
+1. **Data Not Recording**: Check that MKW script actions are properly configured with variable inputs
 
 ### Data Output
 
