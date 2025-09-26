@@ -132,7 +132,7 @@ The script provides four main Advanced Scene Switcher actions:
 Automatically identifies track names from OCR text.
 
 - **OCR Text Variable Name**: Variable containing the OCR text to process
-- **Output**: Sets `identified_track` and `identified_track_safe` macro properties
+- **Output**: Sets `Identified Track` and `Identified Track (Filename Safe)` macro properties
 
 #### 2. MKW Save Lap Action  
 
@@ -150,10 +150,13 @@ Records lap times to CSV with automatic calculations.
 **Direct Input:**
 
 - **Is Final Lap**: Checkbox to indicate if this is the final lap of the run
+- **Create Split Image after Final Lap**: Checkbox to indicate if a split image should be created after the final lap.
+  - Only used if `Is Final Lap` is also checked.
+  - Alternatively use [MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action) to control it manually.
 
 #### 3. MKW Move Old Images Action
 
-Moves image files matching a pattern to a destination subfolder for organization.
+Moves image files matching a pattern to a destination subfolder for file organization. This keeps only the current run's screenshots at the base directory.
 
 **Direct Inputs:**
 
@@ -162,20 +165,22 @@ Moves image files matching a pattern to a destination subfolder for organization
 
 #### 4. MKW Generate Lap Splits Image Action
 
-Manually generates a composite image showing all lap times for a specific run overlaid on a screenshot.
+Generates a composite image showing all lap times for a specific run overlaid on a screenshot.
 
 **Variable Inputs:**
 
 - **Run Number Variable Name**: Variable containing the run number to generate image for
-- **Track Variable Name**: Variable containing the track name
 - **Screenshot Path Variable**: (Optional) Variable containing path to specific screenshot to use as base
+  - If not provided, the screenshot with the run number in its name will be used.
 
 **Features:**
 
 - Automatically combines lap times with screenshot (generated from the final screenshot)
 - Shows individual lap times and total time
+- Shows shrooms used each lap (only accurate if you do not lose your shrooms to Lakitu)
+- Shows coins collected each lap (only accurate if you do not lose coins during the race)
 - Outputs file named `Splits_[Track]_Run-[X].png`
-- Automatically triggered when final lap is saved with "Is Final Lap" checked and image gen is enabled
+- Automatically triggered when final lap is saved with `Is Final Lap` and `Create Split Image after Final Lap` are checked
 
 **Example output:**
 
