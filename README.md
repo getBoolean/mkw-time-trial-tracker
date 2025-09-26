@@ -37,6 +37,8 @@ Before setting up this script, ensure you have:
 
 1. **OBS Studio** (latest version recommended)
 2. **Advanced Scene Switcher Plugin** - Download from [GitHub](https://github.com/WarmUpTill/SceneSwitcher)
+3. **Python 3.10** - Download from [official website](https://www.python.org/downloads/)
+   - Other versions have not been tested, I cannot guarantee it will compatible.
 
 ## Installation
 
