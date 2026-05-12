@@ -1304,7 +1304,7 @@ def _get_best_worst_total_times(base_path, track_name, shrooms_count, run_number
                     track_runs[current_run] = []
                 track_runs[current_run].append(r)
 
-        # Calculate total time for each run (only include runs with a final lap)
+        # Calculate total time for each run (only include runs with a final lap and no missing laps)
         run_totals = []
         for run_number_key, run_laps in track_runs.items():
             total_seconds = 0.0
@@ -1320,6 +1320,31 @@ def _get_best_worst_total_times(base_path, track_name, shrooms_count, run_number
             # Only process runs that have a final lap
             if not has_final_lap:
                 continue
+
+            # Check for missing laps - ensure all lap numbers from 1 to max are present
+            lap_numbers = []
+            for lap in run_laps:
+                try:
+                    lap_num = int(lap.get("LapNumber", 0))
+                    if lap_num > 0:
+                        lap_numbers.append(lap_num)
+                except (ValueError, TypeError):
+                    valid_run = False
+                    break
+
+            if valid_run and lap_numbers:
+                lap_numbers.sort()
+                max_lap = max(lap_numbers)
+                expected_laps = list(range(1, max_lap + 1))
+
+                # Check if any laps are missing
+                if lap_numbers != expected_laps:
+                    obs.script_log(
+                        obs.LOG_INFO,
+                        f"Skipping run {run_number_key} for {track_name}: missing laps. "
+                        f"Expected {expected_laps}, got {lap_numbers}",
+                    )
+                    continue
 
             for lap in run_laps:
                 lap_time_seconds = lap.get("LapTimeSeconds", "")
