@@ -25,6 +25,7 @@ generate_image_action_name = "MKW Generate Lap Times Image"
 
 # Script-level settings (updated via script_update)
 g_base_path = os.path.join("G:", "OBS", "Mario Kart World", "time trials")
+# Note: Variables dont work in the filepaths input boxes in OBS
 g_repo_path_var = "Script Repo Path"
 g_lap_times_scale = 3.0  # Fixed scale factor for lap times box size
 
