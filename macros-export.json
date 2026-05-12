@@ -3,14 +3,14 @@
     {
       "name": "TT",
       "group": true,
-      "groupData": { "collapsed": false, "size": 12 }
+      "groupData": { "collapsed": false, "size": 15 }
     },
     {
       "name": "is-racing",
       "group": false,
       "pauseSaveBehavior": 0,
       "pause": false,
-      "parallel": true,
+      "parallel": false,
       "checkConditionsInParallel": false,
       "onChange": true,
       "skipExecOnStart": false,
@@ -36,8 +36,8 @@
         "dockId": "advss-macro-dock-2f70a751-451b-4bcf-9abb-c2721c14262d",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 499 }, { "pos": 165 }],
-      "macroElseActionSplitterPosition": [{ "pos": 133 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 481 }, { "pos": 156 }],
+      "macroElseActionSplitterPosition": [{ "pos": 124 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -67,7 +67,7 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/lapFlag.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/lapFlag.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
@@ -159,8 +159,8 @@
         "dockId": "advss-macro-dock-7a3c172a-62b6-4768-99f8-ad22e426a33a",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 507 }, { "pos": 157 }],
-      "macroElseActionSplitterPosition": [{ "pos": 125 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 298 }, { "pos": 339 }],
+      "macroElseActionSplitterPosition": [{ "pos": 307 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -218,7 +218,7 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/mkLogo.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/mkLogo.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
@@ -401,7 +401,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -417,7 +417,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -516,13 +516,403 @@
       "inputVariables": []
     },
     {
+      "name": "current-time-white",
+      "group": false,
+      "pauseSaveBehavior": 0,
+      "pause": false,
+      "parallel": true,
+      "checkConditionsInParallel": false,
+      "onChange": false,
+      "skipExecOnStart": false,
+      "stopActionsIfNotDone": false,
+      "useShortCircuitEvaluation": false,
+      "useCustomConditionCheckInterval": false,
+      "customConditionCheckInterval": {
+        "value": { "value": 0.3, "type": 0 },
+        "unit": 0,
+        "version": 1
+      },
+      "dockSettings": {
+        "register": false,
+        "hasRunButton": true,
+        "hasPauseButton": true,
+        "hasStatusLabel": false,
+        "highlightIfConditionsTrue": false,
+        "runButtonText": "Run",
+        "pauseButtonText": "Pause",
+        "unpauseButtonText": "Unpause",
+        "conditionsTrueStatusText": "Conditions are true.",
+        "conditionsFalseStatusText": "Conditions are false.",
+        "dockId": "advss-macro-dock-f57b71f2-8c2e-4bdb-95b4-68951d50d566",
+        "version": 1
+      },
+      "macroActionConditionSplitterPosition": [{ "pos": 448 }, { "pos": 189 }],
+      "macroElseActionSplitterPosition": [{ "pos": 157 }, { "pos": 0 }],
+      "registerHotkeys": false,
+      "pauseHotkey": [],
+      "unpauseHotkey": [],
+      "togglePauseHotkey": [],
+      "conditions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 0,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "macros": [],
+          "macro": "is-racing",
+          "type": 1,
+          "condition": 0,
+          "count": { "value": 0, "type": 0 },
+          "multiStateCount": { "value": 0, "type": 0 },
+          "multiStateCondition": 2,
+          "actionIndex": { "value": 1, "type": 0 },
+          "version": 1
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": true,
+            "customLabel": "Current Time",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 101,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 8,
+          "filePath": "C:/dev/mk-time-trial-tracker/lap2.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": true,
+            "threshold": { "value": 0.9, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "[0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]",
+            "regexConfig": { "enable": true, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 246, "green": 252, "blue": 246 },
+            "colorThreshold": { "value": 0.15, "type": 0 },
+            "pageSegMode": 7,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 3100, "type": 0 },
+              "y": { "value": 100, "type": 0 },
+              "width": { "value": 700, "type": 0 },
+              "height": { "value": 120, "type": 0 },
+              "version": 1
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "variableName": "Current Lap Time OCR",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "1",
+          "numValue": { "value": 0.0, "type": 0 },
+          "condition": 16,
+          "segmentIdx": -1,
+          "subStringStart": { "value": 0, "type": 0 },
+          "subStringSize": { "value": 0, "type": 0 },
+          "regexPattern": ".*",
+          "regexMatchIdx": { "value": 0, "type": 0 },
+          "findRegex": { "enable": false, "partial": false, "options": 0 },
+          "findStr": "Text to find",
+          "replaceStr": "Text to replace with",
+          "regexConfig": { "enable": false, "partial": true, "options": 0 },
+          "mathExpression": "( 1 + 2 * 3 ) / 4",
+          "useCustomPrompt": false,
+          "inputPrompt": "Assign value to variable:",
+          "useInputPlaceholder": false,
+          "inputPlaceholder": "--enter text--",
+          "environmentVariableName": "USERPROFILE",
+          "sceneSelection": { "type": 0, "name": "" },
+          "tempVar": { "type": 1, "idx": 1, "id": "text", "version": 1 },
+          "sceneItemIndex": { "value": 1, "type": 0 },
+          "direction": 0,
+          "stringLength": { "value": 1, "type": 0 },
+          "paddingChar": 48,
+          "caseType": 0,
+          "randomNumberStart": { "value": 0.0, "type": 0 },
+          "randomNumberEnd": { "value": 100.0, "type": 0 },
+          "generateInteger": true,
+          "jsonQuery": "$.some.nested.value",
+          "jsonIndex": { "value": 0, "type": 0 },
+          "version": 1
+        }
+      ],
+      "elseActions": [],
+      "inputVariables": []
+    },
+    {
+      "name": "current-time-yellow",
+      "group": false,
+      "pauseSaveBehavior": 0,
+      "pause": false,
+      "parallel": true,
+      "checkConditionsInParallel": false,
+      "onChange": false,
+      "skipExecOnStart": false,
+      "stopActionsIfNotDone": false,
+      "useShortCircuitEvaluation": false,
+      "useCustomConditionCheckInterval": false,
+      "customConditionCheckInterval": {
+        "value": { "value": 0.3, "type": 0 },
+        "unit": 0,
+        "version": 1
+      },
+      "dockSettings": {
+        "register": false,
+        "hasRunButton": true,
+        "hasPauseButton": true,
+        "hasStatusLabel": false,
+        "highlightIfConditionsTrue": false,
+        "runButtonText": "Run",
+        "pauseButtonText": "Pause",
+        "unpauseButtonText": "Unpause",
+        "conditionsTrueStatusText": "Conditions are true.",
+        "conditionsFalseStatusText": "Conditions are false.",
+        "dockId": "advss-macro-dock-b31dad60-ace8-43db-ba17-0c5e6c63f13c",
+        "version": 1
+      },
+      "macroActionConditionSplitterPosition": [{ "pos": 451 }, { "pos": 186 }],
+      "macroElseActionSplitterPosition": [{ "pos": 154 }, { "pos": 0 }],
+      "registerHotkeys": false,
+      "pauseHotkey": [],
+      "unpauseHotkey": [],
+      "togglePauseHotkey": [],
+      "conditions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 0,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "macros": [],
+          "macro": "is-racing",
+          "type": 1,
+          "condition": 0,
+          "count": { "value": 0, "type": 0 },
+          "multiStateCount": { "value": 0, "type": 0 },
+          "multiStateCondition": 2,
+          "actionIndex": { "value": 1, "type": 0 },
+          "version": 1
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": true,
+            "customLabel": "Current Lap Time",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 101,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 8,
+          "filePath": "C:/dev/mk-time-trial-tracker/lap2.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": true,
+            "threshold": { "value": 0.9, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "[0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]",
+            "regexConfig": { "enable": true, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 250, "green": 227, "blue": 5 },
+            "colorThreshold": { "value": 0.15, "type": 0 },
+            "pageSegMode": 7,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 3100, "type": 0 },
+              "y": { "value": 100, "type": 0 },
+              "width": { "value": 700, "type": 0 },
+              "height": { "value": 120, "type": 0 },
+              "version": 1
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "variableName": "Current Lap Time OCR",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "",
+          "numValue": { "value": 0.0, "type": 0 },
+          "condition": 16,
+          "segmentIdx": -1,
+          "subStringStart": { "value": 0, "type": 0 },
+          "subStringSize": { "value": 0, "type": 0 },
+          "regexPattern": ".*",
+          "regexMatchIdx": { "value": 0, "type": 0 },
+          "findRegex": { "enable": false, "partial": false, "options": 0 },
+          "findStr": "Text to find",
+          "replaceStr": "Text to replace with",
+          "regexConfig": { "enable": false, "partial": true, "options": 0 },
+          "mathExpression": "( 1 + 2 * 3 ) / 4",
+          "useCustomPrompt": false,
+          "inputPrompt": "Assign value to variable:",
+          "useInputPlaceholder": false,
+          "inputPlaceholder": "--enter text--",
+          "environmentVariableName": "USERPROFILE",
+          "sceneSelection": { "type": 0, "name": "" },
+          "tempVar": { "type": 1, "idx": 1, "id": "text", "version": 1 },
+          "sceneItemIndex": { "value": 1, "type": 0 },
+          "direction": 0,
+          "stringLength": { "value": 1, "type": 0 },
+          "paddingChar": 48,
+          "caseType": 0,
+          "randomNumberStart": { "value": 0.0, "type": 0 },
+          "randomNumberEnd": { "value": 100.0, "type": 0 },
+          "generateInteger": true,
+          "jsonQuery": "$.some.nested.value",
+          "jsonIndex": { "value": 0, "type": 0 },
+          "version": 1
+        }
+      ],
+      "elseActions": [],
+      "inputVariables": []
+    },
+    {
       "name": "current-coins",
       "group": false,
       "pauseSaveBehavior": 0,
       "pause": false,
       "parallel": true,
       "checkConditionsInParallel": false,
-      "onChange": true,
+      "onChange": false,
       "skipExecOnStart": false,
       "stopActionsIfNotDone": false,
       "useShortCircuitEvaluation": false,
@@ -546,8 +936,8 @@
         "dockId": "advss-macro-dock-f18053e5-719a-4644-9603-f5ae27b995fb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 576 }, { "pos": 88 }],
-      "macroElseActionSplitterPosition": [{ "pos": 56 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 487 }, { "pos": 150 }],
+      "macroElseActionSplitterPosition": [{ "pos": 118 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -583,7 +973,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": true,
             "customLabel": "Sees Coins",
             "enabled": true,
@@ -605,7 +995,7 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/coins.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/coins.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
@@ -663,7 +1053,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": true,
             "customLabel": "Coin Count",
             "enabled": true,
@@ -795,7 +1185,7 @@
       "group": false,
       "pauseSaveBehavior": 0,
       "pause": false,
-      "parallel": true,
+      "parallel": false,
       "checkConditionsInParallel": false,
       "onChange": true,
       "skipExecOnStart": false,
@@ -821,8 +1211,8 @@
         "dockId": "advss-macro-dock-2fe8abb4-7fe8-4e91-ac74-dd52a1c9ba87",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 526 }, { "pos": 138 }],
-      "macroElseActionSplitterPosition": [{ "pos": 106 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 484 }, { "pos": 153 }],
+      "macroElseActionSplitterPosition": [{ "pos": 121 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -830,7 +1220,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -880,13 +1270,13 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/1Shroom.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/1Shroom.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
             "useForChangedCheck": false,
             "threshold": { "value": 0.99, "type": 0 },
-            "useAlphaAsMask": true,
+            "useAlphaAsMask": false,
             "matchMode": 3,
             "version": 1
           },
@@ -990,7 +1380,7 @@
       "group": false,
       "pauseSaveBehavior": 0,
       "pause": false,
-      "parallel": true,
+      "parallel": false,
       "checkConditionsInParallel": false,
       "onChange": true,
       "skipExecOnStart": false,
@@ -1016,8 +1406,8 @@
         "dockId": "advss-macro-dock-658b175a-b8ed-4e86-a2e9-77e55d6eaca7",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 508 }, { "pos": 156 }],
-      "macroElseActionSplitterPosition": [{ "pos": 124 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 488 }, { "pos": 149 }],
+      "macroElseActionSplitterPosition": [{ "pos": 117 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1025,7 +1415,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -1075,13 +1465,13 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/2Shrooms.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/2Shrooms.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
             "useForChangedCheck": false,
             "threshold": { "value": 0.99, "type": 0 },
-            "useAlphaAsMask": true,
+            "useAlphaAsMask": false,
             "matchMode": 3,
             "version": 1
           },
@@ -1185,7 +1575,7 @@
       "group": false,
       "pauseSaveBehavior": 0,
       "pause": false,
-      "parallel": true,
+      "parallel": false,
       "checkConditionsInParallel": false,
       "onChange": true,
       "skipExecOnStart": false,
@@ -1211,8 +1601,8 @@
         "dockId": "advss-macro-dock-936deea9-dc34-44e9-bc72-26b533707acb",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 511 }, { "pos": 153 }],
-      "macroElseActionSplitterPosition": [{ "pos": 121 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 476 }, { "pos": 161 }],
+      "macroElseActionSplitterPosition": [{ "pos": 129 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1250,7 +1640,7 @@
           "segmentSettings": {
             "collapsed": false,
             "useCustomLabel": true,
-            "customLabel": "Sees 2 Shrooms",
+            "customLabel": "Sees 3 Shrooms",
             "enabled": true,
             "version": 1
           },
@@ -1270,13 +1660,13 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/3Shrooms.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/3Shrooms.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
             "useForChangedCheck": false,
             "threshold": { "value": 0.99, "type": 0 },
-            "useAlphaAsMask": true,
+            "useAlphaAsMask": false,
             "matchMode": 3,
             "version": 1
           },
@@ -1382,7 +1772,7 @@
       "pause": false,
       "parallel": true,
       "checkConditionsInParallel": false,
-      "onChange": false,
+      "onChange": true,
       "skipExecOnStart": false,
       "stopActionsIfNotDone": false,
       "useShortCircuitEvaluation": false,
@@ -1406,8 +1796,8 @@
         "dockId": "advss-macro-dock-59a00cb7-f8f3-49c5-8903-887c9539efa1",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 517 }, { "pos": 147 }],
-      "macroElseActionSplitterPosition": [{ "pos": 115 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 441 }, { "pos": 196 }],
+      "macroElseActionSplitterPosition": [{ "pos": 164 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1415,7 +1805,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -1443,7 +1833,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -1471,7 +1861,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -1575,6 +1965,751 @@
       "inputVariables": []
     },
     {
+      "name": "is-start-time-trial",
+      "group": false,
+      "pauseSaveBehavior": 0,
+      "pause": false,
+      "parallel": true,
+      "checkConditionsInParallel": false,
+      "onChange": true,
+      "skipExecOnStart": false,
+      "stopActionsIfNotDone": false,
+      "useShortCircuitEvaluation": false,
+      "useCustomConditionCheckInterval": false,
+      "customConditionCheckInterval": {
+        "value": { "value": 0.3, "type": 0 },
+        "unit": 0,
+        "version": 1
+      },
+      "dockSettings": {
+        "register": false,
+        "hasRunButton": true,
+        "hasPauseButton": true,
+        "hasStatusLabel": false,
+        "highlightIfConditionsTrue": false,
+        "runButtonText": "Run",
+        "pauseButtonText": "Pause",
+        "unpauseButtonText": "Unpause",
+        "conditionsTrueStatusText": "Conditions are true.",
+        "conditionsFalseStatusText": "Conditions are false.",
+        "dockId": "advss-macro-dock-f3b88656-3c9a-484e-8108-ae8fdf0f9a07",
+        "version": 1
+      },
+      "macroActionConditionSplitterPosition": [{ "pos": 456 }, { "pos": 181 }],
+      "macroElseActionSplitterPosition": [{ "pos": 149 }, { "pos": 0 }],
+      "registerHotkeys": false,
+      "pauseHotkey": [],
+      "unpauseHotkey": [],
+      "togglePauseHotkey": [],
+      "conditions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 1,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "macros": [],
+          "macro": "is-racing",
+          "type": 1,
+          "condition": 0,
+          "count": { "value": 0, "type": 0 },
+          "multiStateCount": { "value": 0, "type": 0 },
+          "multiStateCondition": 2,
+          "actionIndex": { "value": 1, "type": 0 },
+          "version": 1
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": true,
+            "customLabel": "Sees Start Time Trial",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 101,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.25, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 5,
+          "filePath": "C:/dev/mk-time-trial-tracker/startTimeTrial.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": false,
+            "threshold": { "value": 0.99, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "--enter text--",
+            "regexConfig": { "enable": false, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.3, "type": 0 },
+            "pageSegMode": 6,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 1293, "type": 0 },
+              "y": { "value": 570, "type": 0 },
+              "width": { "value": 1294, "type": 0 },
+              "height": { "value": 187, "type": 0 },
+              "version": 1
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "variableName": "IsGhost",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "false",
+          "numValue": { "value": 0.0, "type": 0 },
+          "condition": 0,
+          "segmentIdx": -1,
+          "subStringStart": { "value": 0, "type": 0 },
+          "subStringSize": { "value": 0, "type": 0 },
+          "regexPattern": ".*",
+          "regexMatchIdx": { "value": 0, "type": 0 },
+          "findRegex": { "enable": false, "partial": false, "options": 0 },
+          "findStr": "Text to find",
+          "replaceStr": "Text to replace with",
+          "regexConfig": { "enable": false, "partial": true, "options": 0 },
+          "mathExpression": "( 1 + 2 * 3 ) / 4",
+          "useCustomPrompt": false,
+          "inputPrompt": "Assign value to variable:",
+          "useInputPlaceholder": false,
+          "inputPlaceholder": "--enter text--",
+          "environmentVariableName": "USERPROFILE",
+          "sceneSelection": { "type": 0, "name": "" },
+          "tempVar": { "type": 0, "idx": -1, "id": "", "version": 1 },
+          "sceneItemIndex": { "value": 1, "type": 0 },
+          "direction": 0,
+          "stringLength": { "value": 1, "type": 0 },
+          "paddingChar": 48,
+          "caseType": 0,
+          "randomNumberStart": { "value": 0.0, "type": 0 },
+          "randomNumberEnd": { "value": 100.0, "type": 0 },
+          "generateInteger": true,
+          "jsonQuery": "$.some.nested.value",
+          "jsonIndex": { "value": 0, "type": 0 },
+          "version": 1
+        }
+      ],
+      "elseActions": [],
+      "inputVariables": []
+    },
+    {
+      "name": "is-race-against-ghost-selected",
+      "group": false,
+      "pauseSaveBehavior": 0,
+      "pause": false,
+      "parallel": true,
+      "checkConditionsInParallel": false,
+      "onChange": true,
+      "skipExecOnStart": false,
+      "stopActionsIfNotDone": false,
+      "useShortCircuitEvaluation": false,
+      "useCustomConditionCheckInterval": false,
+      "customConditionCheckInterval": {
+        "value": { "value": 0.3, "type": 0 },
+        "unit": 0,
+        "version": 1
+      },
+      "dockSettings": {
+        "register": false,
+        "hasRunButton": true,
+        "hasPauseButton": true,
+        "hasStatusLabel": false,
+        "highlightIfConditionsTrue": false,
+        "runButtonText": "Run",
+        "pauseButtonText": "Pause",
+        "unpauseButtonText": "Unpause",
+        "conditionsTrueStatusText": "Conditions are true.",
+        "conditionsFalseStatusText": "Conditions are false.",
+        "dockId": "advss-macro-dock-15492c60-f9ad-4be9-940a-9f31d26bf8fb",
+        "version": 1
+      },
+      "macroActionConditionSplitterPosition": [{ "pos": 461 }, { "pos": 176 }],
+      "macroElseActionSplitterPosition": [{ "pos": 144 }, { "pos": 0 }],
+      "registerHotkeys": false,
+      "pauseHotkey": [],
+      "unpauseHotkey": [],
+      "togglePauseHotkey": [],
+      "conditions": [
+        {
+          "segmentSettings": {
+            "collapsed": true,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 1,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "macros": [],
+          "macro": "is-racing",
+          "type": 1,
+          "condition": 0,
+          "count": { "value": 0, "type": 0 },
+          "multiStateCount": { "value": 0, "type": 0 },
+          "multiStateCondition": 2,
+          "actionIndex": { "value": 1, "type": 0 },
+          "version": 1
+        },
+        {
+          "segmentSettings": {
+            "collapsed": true,
+            "useCustomLabel": true,
+            "customLabel": "Sees Race Against Ghost Selected",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 101,
+          "durationModifier": {
+            "time_constraint": 4,
+            "seconds": {
+              "value": { "value": 3.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 5,
+          "filePath": "C:/dev/mk-time-trial-tracker/raceAgainstGhostSelected.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": false,
+            "threshold": { "value": 0.99, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "--enter text--",
+            "regexConfig": { "enable": false, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.3, "type": 0 },
+            "pageSegMode": 6,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 1479, "type": 0 },
+              "y": { "value": 1124, "type": 0 },
+              "width": { "value": 893, "type": 0 },
+              "height": { "value": 152, "type": 0 },
+              "version": 1
+            }
+          }
+        },
+        {
+          "segmentSettings": {
+            "collapsed": true,
+            "useCustomLabel": true,
+            "customLabel": "Sees Race Against Ghost Not Selected",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 103,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.25, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 5,
+          "filePath": "C:/dev/mk-time-trial-tracker/raceAgainstGhostNotSelected.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": false,
+            "threshold": { "value": 0.99, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "--enter text--",
+            "regexConfig": { "enable": false, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.3, "type": 0 },
+            "pageSegMode": 6,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 1496, "type": 0 },
+              "y": { "value": 1140, "type": 0 },
+              "width": { "value": 859, "type": 0 },
+              "height": { "value": 128, "type": 0 },
+              "version": 1
+            }
+          }
+        },
+        {
+          "segmentSettings": {
+            "collapsed": true,
+            "useCustomLabel": true,
+            "customLabel": "Sees Loading Screen",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 101,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.25, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 5,
+          "filePath": "C:/dev/mk-time-trial-tracker/loading.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": false,
+            "threshold": { "value": 0.99, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "--enter text--",
+            "regexConfig": { "enable": false, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.3, "type": 0 },
+            "pageSegMode": 6,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 0, "type": 0 },
+              "y": { "value": 1920, "type": 0 },
+              "width": { "value": 240, "type": 0 },
+              "height": { "value": 240, "type": 0 },
+              "version": 1
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "variableName": "IsGhost",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "false",
+          "numValue": { "value": 0.0, "type": 0 },
+          "condition": 0,
+          "segmentIdx": -1,
+          "subStringStart": { "value": 0, "type": 0 },
+          "subStringSize": { "value": 0, "type": 0 },
+          "regexPattern": ".*",
+          "regexMatchIdx": { "value": 0, "type": 0 },
+          "findRegex": { "enable": false, "partial": false, "options": 0 },
+          "findStr": "Text to find",
+          "replaceStr": "Text to replace with",
+          "regexConfig": { "enable": false, "partial": true, "options": 0 },
+          "mathExpression": "( 1 + 2 * 3 ) / 4",
+          "useCustomPrompt": false,
+          "inputPrompt": "Assign value to variable:",
+          "useInputPlaceholder": false,
+          "inputPlaceholder": "--enter text--",
+          "environmentVariableName": "USERPROFILE",
+          "sceneSelection": { "type": 0, "name": "" },
+          "tempVar": { "type": 0, "idx": -1, "id": "", "version": 1 },
+          "sceneItemIndex": { "value": 1, "type": 0 },
+          "direction": 0,
+          "stringLength": { "value": 1, "type": 0 },
+          "paddingChar": 48,
+          "caseType": 0,
+          "randomNumberStart": { "value": 0.0, "type": 0 },
+          "randomNumberEnd": { "value": 100.0, "type": 0 },
+          "generateInteger": true,
+          "jsonQuery": "$.some.nested.value",
+          "jsonIndex": { "value": 0, "type": 0 },
+          "version": 1
+        }
+      ],
+      "elseActions": [],
+      "inputVariables": []
+    },
+    {
+      "name": "is-view-ghost",
+      "group": false,
+      "pauseSaveBehavior": 0,
+      "pause": false,
+      "parallel": true,
+      "checkConditionsInParallel": false,
+      "onChange": true,
+      "skipExecOnStart": false,
+      "stopActionsIfNotDone": false,
+      "useShortCircuitEvaluation": false,
+      "useCustomConditionCheckInterval": false,
+      "customConditionCheckInterval": {
+        "value": { "value": 0.3, "type": 0 },
+        "unit": 0,
+        "version": 1
+      },
+      "dockSettings": {
+        "register": false,
+        "hasRunButton": true,
+        "hasPauseButton": true,
+        "hasStatusLabel": false,
+        "highlightIfConditionsTrue": false,
+        "runButtonText": "Run",
+        "pauseButtonText": "Pause",
+        "unpauseButtonText": "Unpause",
+        "conditionsTrueStatusText": "Conditions are true.",
+        "conditionsFalseStatusText": "Conditions are false.",
+        "dockId": "advss-macro-dock-aa508f01-e444-4046-a148-05c4834243fa",
+        "version": 1
+      },
+      "macroActionConditionSplitterPosition": [{ "pos": 489 }, { "pos": 148 }],
+      "macroElseActionSplitterPosition": [{ "pos": 116 }, { "pos": 0 }],
+      "registerHotkeys": false,
+      "pauseHotkey": [],
+      "unpauseHotkey": [],
+      "togglePauseHotkey": [],
+      "conditions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 1,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "macros": [],
+          "macro": "is-racing",
+          "type": 1,
+          "condition": 0,
+          "count": { "value": 0, "type": 0 },
+          "multiStateCount": { "value": 0, "type": 0 },
+          "multiStateCondition": 2,
+          "actionIndex": { "value": 1, "type": 0 },
+          "version": 1
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": true,
+            "customLabel": "Sees View Replay",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "video",
+          "logic": 101,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.25, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "videoInputData": {
+            "type": 1,
+            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
+            "sceneSelection": { "type": 0, "name": "" }
+          },
+          "condition": 5,
+          "filePath": "C:/dev/mk-time-trial-tracker/viewReplay.png",
+          "blockUntilScreenshotDone": true,
+          "brightnessThreshold": { "value": 0.5, "type": 0 },
+          "patternMatchData": {
+            "useForChangedCheck": false,
+            "threshold": { "value": 0.999, "type": 0 },
+            "useAlphaAsMask": true,
+            "matchMode": 3,
+            "version": 1
+          },
+          "objectMatchData": {
+            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
+            "scaleFactor": { "value": 1.1, "type": 0 },
+            "minNeighbors": 3,
+            "minSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "maxSize": {
+              "width": { "value": 0, "type": 0 },
+              "height": { "value": 0, "type": 0 },
+              "version": 1
+            },
+            "version": 1
+          },
+          "ocrData": {
+            "pattern": "--enter text--",
+            "regexConfig": { "enable": false, "partial": true, "options": 0 },
+            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
+            "language": "eng",
+            "useConfig": false,
+            "configFile": "config.txt",
+            "textColor": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.3, "type": 0 },
+            "pageSegMode": 6,
+            "version": 2
+          },
+          "colorData": {
+            "color": { "red": 0, "green": 0, "blue": 0 },
+            "colorThreshold": { "value": 0.1, "type": 0 },
+            "matchThreshold": { "value": 0.8, "type": 0 }
+          },
+          "throttleEnabled": false,
+          "throttleCount": 3,
+          "areaData": {
+            "enabled": true,
+            "area": {
+              "x": { "value": 1395, "type": 0 },
+              "y": { "value": 557, "type": 0 },
+              "width": { "value": 1081, "type": 0 },
+              "height": { "value": 238, "type": 0 },
+              "version": 1
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "variableName": "IsGhost",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "true",
+          "numValue": { "value": 0.0, "type": 0 },
+          "condition": 0,
+          "segmentIdx": -1,
+          "subStringStart": { "value": 0, "type": 0 },
+          "subStringSize": { "value": 0, "type": 0 },
+          "regexPattern": ".*",
+          "regexMatchIdx": { "value": 0, "type": 0 },
+          "findRegex": { "enable": false, "partial": false, "options": 0 },
+          "findStr": "Text to find",
+          "replaceStr": "Text to replace with",
+          "regexConfig": { "enable": false, "partial": true, "options": 0 },
+          "mathExpression": "( 1 + 2 * 3 ) / 4",
+          "useCustomPrompt": false,
+          "inputPrompt": "Assign value to variable:",
+          "useInputPlaceholder": false,
+          "inputPlaceholder": "--enter text--",
+          "environmentVariableName": "USERPROFILE",
+          "sceneSelection": { "type": 0, "name": "" },
+          "tempVar": { "type": 0, "idx": -1, "id": "", "version": 1 },
+          "sceneItemIndex": { "value": 1, "type": 0 },
+          "direction": 0,
+          "stringLength": { "value": 1, "type": 0 },
+          "paddingChar": 48,
+          "caseType": 0,
+          "randomNumberStart": { "value": 0.0, "type": 0 },
+          "randomNumberEnd": { "value": 100.0, "type": 0 },
+          "generateInteger": true,
+          "jsonQuery": "$.some.nested.value",
+          "jsonIndex": { "value": 0, "type": 0 },
+          "version": 1
+        }
+      ],
+      "elseActions": [],
+      "inputVariables": []
+    },
+    {
       "name": "tt-start",
       "group": false,
       "pauseSaveBehavior": 0,
@@ -1605,8 +2740,8 @@
         "dockId": "advss-macro-dock-41e51690-43a0-4a4e-ad74-f021cc964a2c",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 527 }, { "pos": 137 }],
-      "macroElseActionSplitterPosition": [{ "pos": 105 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 435 }, { "pos": 202 }],
+      "macroElseActionSplitterPosition": [{ "pos": 170 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -1620,8 +2755,33 @@
             "enabled": true,
             "version": 1
           },
-          "id": "macro",
+          "id": "variable",
           "logic": 0,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "variableName": "IsGhost",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "false",
+          "numValue": 0.0,
+          "condition": 0,
+          "regexConfig": { "enable": false, "partial": false, "options": 0 }
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 101,
           "durationModifier": {
             "time_constraint": 0,
             "seconds": {
@@ -1642,7 +2802,7 @@
         },
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": true,
             "customLabel": "Time 0:00.000",
             "enabled": true,
@@ -1664,7 +2824,7 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/time-zero.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/time-zero.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
@@ -1875,396 +3035,6 @@
       "inputVariables": []
     },
     {
-      "name": "current-time-white",
-      "group": false,
-      "pauseSaveBehavior": 0,
-      "pause": false,
-      "parallel": true,
-      "checkConditionsInParallel": false,
-      "onChange": false,
-      "skipExecOnStart": false,
-      "stopActionsIfNotDone": false,
-      "useShortCircuitEvaluation": false,
-      "useCustomConditionCheckInterval": false,
-      "customConditionCheckInterval": {
-        "value": { "value": 0.3, "type": 0 },
-        "unit": 0,
-        "version": 1
-      },
-      "dockSettings": {
-        "register": false,
-        "hasRunButton": true,
-        "hasPauseButton": true,
-        "hasStatusLabel": false,
-        "highlightIfConditionsTrue": false,
-        "runButtonText": "Run",
-        "pauseButtonText": "Pause",
-        "unpauseButtonText": "Unpause",
-        "conditionsTrueStatusText": "Conditions are true.",
-        "conditionsFalseStatusText": "Conditions are false.",
-        "dockId": "advss-macro-dock-f57b71f2-8c2e-4bdb-95b4-68951d50d566",
-        "version": 1
-      },
-      "macroActionConditionSplitterPosition": [{ "pos": 541 }, { "pos": 123 }],
-      "macroElseActionSplitterPosition": [{ "pos": 91 }, { "pos": 0 }],
-      "registerHotkeys": false,
-      "pauseHotkey": [],
-      "unpauseHotkey": [],
-      "togglePauseHotkey": [],
-      "conditions": [
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": false,
-            "customLabel": "My label",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "macro",
-          "logic": 0,
-          "durationModifier": {
-            "time_constraint": 0,
-            "seconds": {
-              "value": { "value": 0.0, "type": 0 },
-              "unit": 0,
-              "version": 1
-            }
-          },
-          "macros": [],
-          "macro": "is-racing",
-          "type": 1,
-          "condition": 0,
-          "count": { "value": 0, "type": 0 },
-          "multiStateCount": { "value": 0, "type": 0 },
-          "multiStateCondition": 2,
-          "actionIndex": { "value": 1, "type": 0 },
-          "version": 1
-        },
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": true,
-            "customLabel": "Current Time",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "video",
-          "logic": 101,
-          "durationModifier": {
-            "time_constraint": 0,
-            "seconds": {
-              "value": { "value": 0.0, "type": 0 },
-              "unit": 0,
-              "version": 1
-            }
-          },
-          "videoInputData": {
-            "type": 1,
-            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
-            "sceneSelection": { "type": 0, "name": "" }
-          },
-          "condition": 8,
-          "filePath": "C:/dev/mk-time-trial-tracker/lap2.png",
-          "blockUntilScreenshotDone": true,
-          "brightnessThreshold": { "value": 0.5, "type": 0 },
-          "patternMatchData": {
-            "useForChangedCheck": true,
-            "threshold": { "value": 0.9, "type": 0 },
-            "useAlphaAsMask": true,
-            "matchMode": 3,
-            "version": 1
-          },
-          "objectMatchData": {
-            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
-            "scaleFactor": { "value": 1.1, "type": 0 },
-            "minNeighbors": 3,
-            "minSize": {
-              "width": { "value": 0, "type": 0 },
-              "height": { "value": 0, "type": 0 },
-              "version": 1
-            },
-            "maxSize": {
-              "width": { "value": 0, "type": 0 },
-              "height": { "value": 0, "type": 0 },
-              "version": 1
-            },
-            "version": 1
-          },
-          "ocrData": {
-            "pattern": "[0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]",
-            "regexConfig": { "enable": true, "partial": true, "options": 0 },
-            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
-            "language": "eng",
-            "useConfig": false,
-            "configFile": "config.txt",
-            "textColor": { "red": 246, "green": 252, "blue": 246 },
-            "colorThreshold": { "value": 0.15, "type": 0 },
-            "pageSegMode": 7,
-            "version": 2
-          },
-          "colorData": {
-            "color": { "red": 0, "green": 0, "blue": 0 },
-            "colorThreshold": { "value": 0.1, "type": 0 },
-            "matchThreshold": { "value": 0.8, "type": 0 }
-          },
-          "throttleEnabled": false,
-          "throttleCount": 3,
-          "areaData": {
-            "enabled": true,
-            "area": {
-              "x": { "value": 3100, "type": 0 },
-              "y": { "value": 100, "type": 0 },
-              "width": { "value": 700, "type": 0 },
-              "height": { "value": 120, "type": 0 },
-              "version": 1
-            }
-          }
-        }
-      ],
-      "actions": [
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": false,
-            "customLabel": "My label",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "variable",
-          "variableName": "Current Lap Time OCR",
-          "variable2Name": "Invalid variable selection",
-          "strValue": "1",
-          "numValue": { "value": 0.0, "type": 0 },
-          "condition": 16,
-          "segmentIdx": -1,
-          "subStringStart": { "value": 0, "type": 0 },
-          "subStringSize": { "value": 0, "type": 0 },
-          "regexPattern": ".*",
-          "regexMatchIdx": { "value": 0, "type": 0 },
-          "findRegex": { "enable": false, "partial": false, "options": 0 },
-          "findStr": "Text to find",
-          "replaceStr": "Text to replace with",
-          "regexConfig": { "enable": false, "partial": true, "options": 0 },
-          "mathExpression": "( 1 + 2 * 3 ) / 4",
-          "useCustomPrompt": false,
-          "inputPrompt": "Assign value to variable:",
-          "useInputPlaceholder": false,
-          "inputPlaceholder": "--enter text--",
-          "environmentVariableName": "USERPROFILE",
-          "sceneSelection": { "type": 0, "name": "" },
-          "tempVar": { "type": 1, "idx": 1, "id": "text", "version": 1 },
-          "sceneItemIndex": { "value": 1, "type": 0 },
-          "direction": 0,
-          "stringLength": { "value": 1, "type": 0 },
-          "paddingChar": 48,
-          "caseType": 0,
-          "randomNumberStart": { "value": 0.0, "type": 0 },
-          "randomNumberEnd": { "value": 100.0, "type": 0 },
-          "generateInteger": true,
-          "jsonQuery": "$.some.nested.value",
-          "jsonIndex": { "value": 0, "type": 0 },
-          "version": 1
-        }
-      ],
-      "elseActions": [],
-      "inputVariables": []
-    },
-    {
-      "name": "current-time-yellow",
-      "group": false,
-      "pauseSaveBehavior": 0,
-      "pause": false,
-      "parallel": true,
-      "checkConditionsInParallel": false,
-      "onChange": false,
-      "skipExecOnStart": false,
-      "stopActionsIfNotDone": false,
-      "useShortCircuitEvaluation": false,
-      "useCustomConditionCheckInterval": false,
-      "customConditionCheckInterval": {
-        "value": { "value": 0.3, "type": 0 },
-        "unit": 0,
-        "version": 1
-      },
-      "dockSettings": {
-        "register": false,
-        "hasRunButton": true,
-        "hasPauseButton": true,
-        "hasStatusLabel": false,
-        "highlightIfConditionsTrue": false,
-        "runButtonText": "Run",
-        "pauseButtonText": "Pause",
-        "unpauseButtonText": "Unpause",
-        "conditionsTrueStatusText": "Conditions are true.",
-        "conditionsFalseStatusText": "Conditions are false.",
-        "dockId": "advss-macro-dock-b31dad60-ace8-43db-ba17-0c5e6c63f13c",
-        "version": 1
-      },
-      "macroActionConditionSplitterPosition": [{ "pos": 537 }, { "pos": 127 }],
-      "macroElseActionSplitterPosition": [{ "pos": 95 }, { "pos": 0 }],
-      "registerHotkeys": false,
-      "pauseHotkey": [],
-      "unpauseHotkey": [],
-      "togglePauseHotkey": [],
-      "conditions": [
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": false,
-            "customLabel": "My label",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "macro",
-          "logic": 0,
-          "durationModifier": {
-            "time_constraint": 0,
-            "seconds": {
-              "value": { "value": 0.0, "type": 0 },
-              "unit": 0,
-              "version": 1
-            }
-          },
-          "macros": [],
-          "macro": "is-racing",
-          "type": 1,
-          "condition": 0,
-          "count": { "value": 0, "type": 0 },
-          "multiStateCount": { "value": 0, "type": 0 },
-          "multiStateCondition": 2,
-          "actionIndex": { "value": 1, "type": 0 },
-          "version": 1
-        },
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": true,
-            "customLabel": "Current Lap Time",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "video",
-          "logic": 101,
-          "durationModifier": {
-            "time_constraint": 0,
-            "seconds": {
-              "value": { "value": 0.0, "type": 0 },
-              "unit": 0,
-              "version": 1
-            }
-          },
-          "videoInputData": {
-            "type": 1,
-            "source": { "type": 0, "name": "AverMedia Live Gamer 4K 2.1" },
-            "sceneSelection": { "type": 0, "name": "" }
-          },
-          "condition": 8,
-          "filePath": "C:/dev/mk-time-trial-tracker/lap2.png",
-          "blockUntilScreenshotDone": true,
-          "brightnessThreshold": { "value": 0.5, "type": 0 },
-          "patternMatchData": {
-            "useForChangedCheck": true,
-            "threshold": { "value": 0.9, "type": 0 },
-            "useAlphaAsMask": true,
-            "matchMode": 3,
-            "version": 1
-          },
-          "objectMatchData": {
-            "modelPath": "../../data/obs-plugins/advanced-scene-switcher/res/cascadeClassifiers/haarcascade_frontalface_alt.xml",
-            "scaleFactor": { "value": 1.1, "type": 0 },
-            "minNeighbors": 3,
-            "minSize": {
-              "width": { "value": 0, "type": 0 },
-              "height": { "value": 0, "type": 0 },
-              "version": 1
-            },
-            "maxSize": {
-              "width": { "value": 0, "type": 0 },
-              "height": { "value": 0, "type": 0 },
-              "version": 1
-            },
-            "version": 1
-          },
-          "ocrData": {
-            "pattern": "[0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]",
-            "regexConfig": { "enable": true, "partial": true, "options": 0 },
-            "tesseractBasePath": "../../data/obs-plugins/advanced-scene-switcher/res/ocr",
-            "language": "eng",
-            "useConfig": false,
-            "configFile": "config.txt",
-            "textColor": { "red": 250, "green": 227, "blue": 5 },
-            "colorThreshold": { "value": 0.15, "type": 0 },
-            "pageSegMode": 7,
-            "version": 2
-          },
-          "colorData": {
-            "color": { "red": 0, "green": 0, "blue": 0 },
-            "colorThreshold": { "value": 0.1, "type": 0 },
-            "matchThreshold": { "value": 0.8, "type": 0 }
-          },
-          "throttleEnabled": false,
-          "throttleCount": 3,
-          "areaData": {
-            "enabled": true,
-            "area": {
-              "x": { "value": 3100, "type": 0 },
-              "y": { "value": 100, "type": 0 },
-              "width": { "value": 700, "type": 0 },
-              "height": { "value": 120, "type": 0 },
-              "version": 1
-            }
-          }
-        }
-      ],
-      "actions": [
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": false,
-            "customLabel": "My label",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "variable",
-          "variableName": "Current Lap Time OCR",
-          "variable2Name": "Invalid variable selection",
-          "strValue": "",
-          "numValue": { "value": 0.0, "type": 0 },
-          "condition": 16,
-          "segmentIdx": -1,
-          "subStringStart": { "value": 0, "type": 0 },
-          "subStringSize": { "value": 0, "type": 0 },
-          "regexPattern": ".*",
-          "regexMatchIdx": { "value": 0, "type": 0 },
-          "findRegex": { "enable": false, "partial": false, "options": 0 },
-          "findStr": "Text to find",
-          "replaceStr": "Text to replace with",
-          "regexConfig": { "enable": false, "partial": true, "options": 0 },
-          "mathExpression": "( 1 + 2 * 3 ) / 4",
-          "useCustomPrompt": false,
-          "inputPrompt": "Assign value to variable:",
-          "useInputPlaceholder": false,
-          "inputPlaceholder": "--enter text--",
-          "environmentVariableName": "USERPROFILE",
-          "sceneSelection": { "type": 0, "name": "" },
-          "tempVar": { "type": 1, "idx": 1, "id": "text", "version": 1 },
-          "sceneItemIndex": { "value": 1, "type": 0 },
-          "direction": 0,
-          "stringLength": { "value": 1, "type": 0 },
-          "paddingChar": 48,
-          "caseType": 0,
-          "randomNumberStart": { "value": 0.0, "type": 0 },
-          "randomNumberEnd": { "value": 100.0, "type": 0 },
-          "generateInteger": true,
-          "jsonQuery": "$.some.nested.value",
-          "jsonIndex": { "value": 0, "type": 0 },
-          "version": 1
-        }
-      ],
-      "elseActions": [],
-      "inputVariables": []
-    },
-    {
       "name": "screenshot-lap-end",
       "group": false,
       "pauseSaveBehavior": 0,
@@ -2295,8 +3065,8 @@
         "dockId": "advss-macro-dock-b74e5e20-1cdc-4269-a8e8-01103cd52dfe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 419 }, { "pos": 245 }],
-      "macroElseActionSplitterPosition": [{ "pos": 213 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 431 }, { "pos": 206 }],
+      "macroElseActionSplitterPosition": [{ "pos": 174 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2310,8 +3080,33 @@
             "enabled": true,
             "version": 1
           },
-          "id": "macro",
+          "id": "variable",
           "logic": 0,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "variableName": "IsGhost",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "false",
+          "numValue": 0.0,
+          "condition": 0,
+          "regexConfig": { "enable": false, "partial": false, "options": 0 }
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "logic": 101,
           "durationModifier": {
             "time_constraint": 0,
             "seconds": {
@@ -2378,6 +3173,31 @@
           "strValue": "0",
           "numValue": 0.0,
           "condition": 0,
+          "regexConfig": { "enable": false, "partial": false, "options": 0 }
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "logic": 103,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "variableName": "Current Track",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "0",
+          "numValue": 0.0,
+          "condition": 1,
           "regexConfig": { "enable": false, "partial": false, "options": 0 }
         },
         {
@@ -2464,7 +3284,7 @@
       "actions": [
         {
           "segmentSettings": {
-            "collapsed": true,
+            "collapsed": false,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -2495,7 +3315,8 @@
             "track_var": "Current Track",
             "coins_var": "CurrentCoins",
             "shrooms_var": "UsedShrooms",
-            "is_final_lap": false
+            "is_final_lap": false,
+            "enable_auto_image": true
           },
           "duration": {
             "value": { "value": 10.0, "type": 0 },
@@ -2588,49 +3409,6 @@
           "jsonQuery": "$.some.nested.value",
           "jsonIndex": { "value": 0, "type": 0 },
           "version": 1
-        },
-        {
-          "segmentSettings": {
-            "collapsed": false,
-            "useCustomLabel": false,
-            "customLabel": "My label",
-            "enabled": true,
-            "version": 1
-          },
-          "id": "variable",
-          "variableName": "Next TT Lap",
-          "variable2Name": "Invalid variable selection",
-          "strValue": "2",
-          "numValue": { "value": 1.0, "type": 0 },
-          "condition": 10,
-          "segmentIdx": -1,
-          "subStringStart": { "value": 0, "type": 0 },
-          "subStringSize": { "value": 0, "type": 0 },
-          "regexPattern": ".*",
-          "regexMatchIdx": { "value": 0, "type": 0 },
-          "findRegex": { "enable": false, "partial": false, "options": 0 },
-          "findStr": "Text to find",
-          "replaceStr": "Text to replace with",
-          "regexConfig": { "enable": false, "partial": true, "options": 0 },
-          "mathExpression": "${Current TT Lap} + 1",
-          "useCustomPrompt": false,
-          "inputPrompt": "Assign value to variable:",
-          "useInputPlaceholder": false,
-          "inputPlaceholder": "--enter text--",
-          "environmentVariableName": "USERPROFILE",
-          "sceneSelection": { "type": 0, "name": "" },
-          "tempVar": { "type": 0, "idx": -1, "id": "", "version": 1 },
-          "sceneItemIndex": { "value": 1, "type": 0 },
-          "direction": 0,
-          "stringLength": { "value": 1, "type": 0 },
-          "paddingChar": 48,
-          "caseType": 0,
-          "randomNumberStart": { "value": 0.0, "type": 0 },
-          "randomNumberEnd": { "value": 100.0, "type": 0 },
-          "generateInteger": true,
-          "jsonQuery": "$.some.nested.value",
-          "jsonIndex": { "value": 0, "type": 0 },
-          "version": 1
         }
       ],
       "elseActions": [],
@@ -2667,8 +3445,8 @@
         "dockId": "advss-macro-dock-514cbc02-a8dc-4abb-973f-c529dbd81b17",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 287 }, { "pos": 96 }],
-      "macroElseActionSplitterPosition": [{ "pos": 64 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 461 }, { "pos": 176 }],
+      "macroElseActionSplitterPosition": [{ "pos": 144 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -2676,7 +3454,7 @@
       "conditions": [
         {
           "segmentSettings": {
-            "collapsed": false,
+            "collapsed": true,
             "useCustomLabel": false,
             "customLabel": "My label",
             "enabled": true,
@@ -2730,6 +3508,31 @@
         {
           "segmentSettings": {
             "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "variable",
+          "logic": 103,
+          "durationModifier": {
+            "time_constraint": 0,
+            "seconds": {
+              "value": { "value": 0.0, "type": 0 },
+              "unit": 0,
+              "version": 1
+            }
+          },
+          "variableName": "Current Track",
+          "variable2Name": "Invalid variable selection",
+          "strValue": "0",
+          "numValue": 0.0,
+          "condition": 1,
+          "regexConfig": { "enable": false, "partial": false, "options": 0 }
+        },
+        {
+          "segmentSettings": {
+            "collapsed": true,
             "useCustomLabel": true,
             "customLabel": "Is Results Screen",
             "enabled": true,
@@ -2751,7 +3554,7 @@
             "sceneSelection": { "type": 0, "name": "" }
           },
           "condition": 5,
-          "filePath": "${Script Repo Path}/tt-results.png",
+          "filePath": "C:/dev/mk-time-trial-tracker/tt-results.png",
           "blockUntilScreenshotDone": true,
           "brightnessThreshold": { "value": 0.5, "type": 0 },
           "patternMatchData": {
@@ -2842,7 +3645,8 @@
             "track_var": "Current Track",
             "coins_var": "CurrentCoins",
             "shrooms_var": "UsedShrooms",
-            "is_final_lap": true
+            "is_final_lap": true,
+            "enable_auto_image": true
           },
           "duration": {
             "value": { "value": 10.0, "type": 0 },
@@ -2928,8 +3732,8 @@
         "dockId": "advss-macro-dock-20ad15a1-6860-42b9-829e-d246e9dfb2fe",
         "version": 1
       },
-      "macroActionConditionSplitterPosition": [{ "pos": 24 }, { "pos": 359 }],
-      "macroElseActionSplitterPosition": [{ "pos": 327 }, { "pos": 0 }],
+      "macroActionConditionSplitterPosition": [{ "pos": 40 }, { "pos": 597 }],
+      "macroElseActionSplitterPosition": [{ "pos": 565 }, { "pos": 0 }],
       "registerHotkeys": false,
       "pauseHotkey": [],
       "unpauseHotkey": [],
@@ -3739,6 +4543,207 @@
             "inputVariables": []
           },
           "customWidgetHeight": 600
+        },
+        {
+          "segmentSettings": {
+            "collapsed": false,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "macro": "is-start-time-trial",
+          "actionIndex": { "value": 1, "type": 0 },
+          "action": 8,
+          "runOptions": {
+            "logic": 0,
+            "reevaluateConditionState": false,
+            "runElseActions": false,
+            "skipWhenPaused": true,
+            "setInputs": false,
+            "inputs": []
+          },
+          "nestedMacro": {
+            "name": "",
+            "group": false,
+            "pauseSaveBehavior": 0,
+            "pause": false,
+            "parallel": false,
+            "checkConditionsInParallel": false,
+            "onChange": true,
+            "skipExecOnStart": false,
+            "stopActionsIfNotDone": false,
+            "useShortCircuitEvaluation": false,
+            "useCustomConditionCheckInterval": false,
+            "customConditionCheckInterval": {
+              "value": { "value": 0.3, "type": 0 },
+              "unit": 0,
+              "version": 1
+            },
+            "dockSettings": {
+              "register": false,
+              "hasRunButton": true,
+              "hasPauseButton": true,
+              "hasStatusLabel": false,
+              "highlightIfConditionsTrue": false,
+              "runButtonText": "Run",
+              "pauseButtonText": "Pause",
+              "unpauseButtonText": "Unpause",
+              "conditionsTrueStatusText": "Conditions are true.",
+              "conditionsFalseStatusText": "Conditions are false.",
+              "dockId": "advss-macro-dock-4e1d5e8c-77c0-49fc-97fd-71bf4b8d36e8",
+              "version": 1
+            },
+            "macroActionConditionSplitterPosition": [
+              { "pos": 1 },
+              { "pos": 14 }
+            ],
+            "macroElseActionSplitterPosition": [{ "pos": 1 }, { "pos": 6 }],
+            "registerHotkeys": true,
+            "pauseHotkey": [],
+            "unpauseHotkey": [],
+            "togglePauseHotkey": [],
+            "conditions": [],
+            "actions": [],
+            "elseActions": [],
+            "inputVariables": []
+          },
+          "customWidgetHeight": 600
+        },
+        {
+          "segmentSettings": {
+            "collapsed": true,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "macro": "is-view-ghost",
+          "actionIndex": { "value": 1, "type": 0 },
+          "action": 8,
+          "runOptions": {
+            "logic": 0,
+            "reevaluateConditionState": false,
+            "runElseActions": false,
+            "skipWhenPaused": true,
+            "setInputs": false,
+            "inputs": []
+          },
+          "nestedMacro": {
+            "name": "",
+            "group": false,
+            "pauseSaveBehavior": 0,
+            "pause": false,
+            "parallel": false,
+            "checkConditionsInParallel": false,
+            "onChange": true,
+            "skipExecOnStart": false,
+            "stopActionsIfNotDone": false,
+            "useShortCircuitEvaluation": false,
+            "useCustomConditionCheckInterval": false,
+            "customConditionCheckInterval": {
+              "value": { "value": 0.3, "type": 0 },
+              "unit": 0,
+              "version": 1
+            },
+            "dockSettings": {
+              "register": false,
+              "hasRunButton": true,
+              "hasPauseButton": true,
+              "hasStatusLabel": false,
+              "highlightIfConditionsTrue": false,
+              "runButtonText": "Run",
+              "pauseButtonText": "Pause",
+              "unpauseButtonText": "Unpause",
+              "conditionsTrueStatusText": "Conditions are true.",
+              "conditionsFalseStatusText": "Conditions are false.",
+              "dockId": "advss-macro-dock-4e1d5e8c-77c0-49fc-97fd-71bf4b8d36e8",
+              "version": 1
+            },
+            "macroActionConditionSplitterPosition": [
+              { "pos": 1 },
+              { "pos": 14 }
+            ],
+            "macroElseActionSplitterPosition": [{ "pos": 1 }, { "pos": 6 }],
+            "registerHotkeys": true,
+            "pauseHotkey": [],
+            "unpauseHotkey": [],
+            "togglePauseHotkey": [],
+            "conditions": [],
+            "actions": [],
+            "elseActions": [],
+            "inputVariables": []
+          },
+          "customWidgetHeight": 600
+        },
+        {
+          "segmentSettings": {
+            "collapsed": true,
+            "useCustomLabel": false,
+            "customLabel": "My label",
+            "enabled": true,
+            "version": 1
+          },
+          "id": "macro",
+          "macro": "is-race-against-ghost-selected",
+          "actionIndex": { "value": 1, "type": 0 },
+          "action": 8,
+          "runOptions": {
+            "logic": 0,
+            "reevaluateConditionState": false,
+            "runElseActions": false,
+            "skipWhenPaused": true,
+            "setInputs": false,
+            "inputs": []
+          },
+          "nestedMacro": {
+            "name": "",
+            "group": false,
+            "pauseSaveBehavior": 0,
+            "pause": false,
+            "parallel": false,
+            "checkConditionsInParallel": false,
+            "onChange": true,
+            "skipExecOnStart": false,
+            "stopActionsIfNotDone": false,
+            "useShortCircuitEvaluation": false,
+            "useCustomConditionCheckInterval": false,
+            "customConditionCheckInterval": {
+              "value": { "value": 0.3, "type": 0 },
+              "unit": 0,
+              "version": 1
+            },
+            "dockSettings": {
+              "register": false,
+              "hasRunButton": true,
+              "hasPauseButton": true,
+              "hasStatusLabel": false,
+              "highlightIfConditionsTrue": false,
+              "runButtonText": "Run",
+              "pauseButtonText": "Pause",
+              "unpauseButtonText": "Unpause",
+              "conditionsTrueStatusText": "Conditions are true.",
+              "conditionsFalseStatusText": "Conditions are false.",
+              "dockId": "advss-macro-dock-4e1d5e8c-77c0-49fc-97fd-71bf4b8d36e8",
+              "version": 1
+            },
+            "macroActionConditionSplitterPosition": [
+              { "pos": 1 },
+              { "pos": 14 }
+            ],
+            "macroElseActionSplitterPosition": [{ "pos": 1 }, { "pos": 6 }],
+            "registerHotkeys": true,
+            "pauseHotkey": [],
+            "unpauseHotkey": [],
+            "togglePauseHotkey": [],
+            "conditions": [],
+            "actions": [],
+            "elseActions": [],
+            "inputVariables": []
+          },
+          "customWidgetHeight": 600
         }
       ],
       "elseActions": [],
@@ -4082,23 +5087,36 @@
     }
   ],
   "variables": [
-    { "name": "FileName", "saveAction": 0, "defaultValue": "" },
     { "name": "Year", "saveAction": 0, "defaultValue": "" },
     { "name": "Month", "saveAction": 0, "defaultValue": "" },
     { "name": "Day", "saveAction": 0, "defaultValue": "" },
     { "name": "Hour", "saveAction": 0, "defaultValue": "" },
     { "name": "Minute", "saveAction": 0, "defaultValue": "" },
     { "name": "Second", "saveAction": 0, "defaultValue": "" },
-    { "name": "Test", "saveAction": 0, "defaultValue": "" },
-    { "name": "Current TT Lap", "saveAction": 0, "defaultValue": "" },
-    { "name": "Previous TT Lap", "saveAction": 0, "defaultValue": "" },
-    { "name": "Next TT Lap", "saveAction": 0, "defaultValue": "" },
+    {
+      "name": "Current TT Lap",
+      "saveAction": 1,
+      "value": "0",
+      "defaultValue": ""
+    },
+    {
+      "name": "Previous TT Lap",
+      "saveAction": 1,
+      "value": "",
+      "defaultValue": ""
+    },
+    {
+      "name": "Next TT Lap",
+      "saveAction": 1,
+      "value": "4",
+      "defaultValue": ""
+    },
     { "name": "Current Lap OCR", "saveAction": 0, "defaultValue": "" },
     { "name": "Previous Lap OCR", "saveAction": 0, "defaultValue": "" },
     {
       "name": "TT Run Number",
       "saveAction": 1,
-      "value": "92",
+      "value": "1295",
       "defaultValue": ""
     },
     { "name": "Current Lap Time OCR", "saveAction": 0, "defaultValue": "" },
@@ -4111,30 +5129,36 @@
     {
       "name": "LobbyCount",
       "saveAction": 1,
-      "value": "56",
+      "value": "59",
       "defaultValue": ""
     },
-    { "name": "RaceCount", "saveAction": 0, "defaultValue": "" },
-    { "name": "Current Track OCR", "saveAction": 0, "defaultValue": "" },
-    { "name": "IdentifiedTrack", "saveAction": 0, "defaultValue": "" },
+    { "name": "RaceCount", "saveAction": 1, "value": "1", "defaultValue": "" },
+    {
+      "name": "IdentifiedTrack",
+      "saveAction": 1,
+      "value": "",
+      "defaultValue": ""
+    },
     {
       "name": "Current Track Filename Safe",
       "saveAction": 1,
       "value": "Cheep Cheep Falls",
       "defaultValue": ""
     },
-    { "name": "CurrentCoins", "saveAction": 0, "defaultValue": "" },
+    {
+      "name": "CurrentCoins",
+      "saveAction": 1,
+      "value": "15\n",
+      "defaultValue": ""
+    },
     {
       "name": "UsedShrooms",
       "saveAction": 1,
       "value": "3",
       "defaultValue": ""
     },
-    {
-      "name": "Script Repo Path",
-      "saveAction": 2,
-      "defaultValue": "C:/dev/mk-time-trial-tracker"
-    }
+    { "name": "Current Track OCR", "saveAction": 0, "defaultValue": "" },
+    { "name": "IsGhost", "saveAction": 1, "value": "false", "defaultValue": "" }
   ],
   "actionQueues": [],
   "version": "1.31.0"

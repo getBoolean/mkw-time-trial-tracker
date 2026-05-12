@@ -1,30 +1,78 @@
-# mk-time-trial-tracker
+# mkw-time-trial-tracker  <!-- omit in toc -->
 
-A comprehensive OBS Studio script for the Advanced Scene Switcher plugin that provides automatic track name correction and lap time recording for Mario Kart Wii time trials.
+A comprehensive OBS Studio script and macros for the Advanced Scene Switcher plugin that provides automatic track detection and lap time recording for Mario Kart World time trials.
 
-## Quick setup
+![Macro Setup Guide](docs/Splits_Cheep_Cheep_Falls_Run.png)
+
+## Quick setup  <!-- omit in toc -->
 
 1. Install Advanced Scene Switcher:
    - Download from the plugin's GitHub and install, then restart OBS.
-2. Add this script to OBS:
+2. Download and install Python 3.10 from the [official website](https://www.python.org/downloads/).
+3. Configure Advanced Scene Switcher to use Python 3.10
+   - OBS → **Tools** → **Scripts** → **Python Settings** → enter the path to the Python 3.10 directory
+4. [Download](https://github.com/getBoolean/mk-time-trial-tracker/releases/latest) the bundle, extract, and add this script to OBS:
    - OBS → **Tools** → **Scripts** → **+** → select `TimeTrialTracker.py`.
-3. Import the provided macro:
-   - OBS → **Tools** → **Advanced Scene Switcher** → Macros (⋯) → **Import** → choose `macros-export.json`.
-   - **Download**: [macros-export.json](./macros-export.json)
-4. After import, adjust names/paths if needed (capture source name, project paths, save locations).
-5. In Advanced Scene Switcher, open the imported `current-track` macro and ensure the `MKW Track` action's setting **OCR Text Variable Name** matches your OCR variable (default: `Current Track OCR`).
+5. Import the provided macro:
+   - OBS → **Tools** → **Advanced Scene Switcher** → Macros (⋯) → **Import** → choose `macros-export.json` from the extracted bundle
+6. After import, adjust names/paths if needed (capture source name, project paths, save locations).
+7. In Advanced Scene Switcher, open all the imported macros and ensure the correct settings are applied. See [Macro Setup Guide](#macro-setup-guide) for details.
+8. Disable HDR in the Switch TV settings. The images included in the bundle were taken with HDR off.
 
 > **For detailed setup instructions with visual guides, see the [Macro Setup Guide](#macro-setup-guide) section below.**
 
-## Features
+## Features  <!-- omit in toc -->
 
 - **Track Autocorrect**: Automatically identifies and corrects track names from OCR text
 - **Lap Time Recording**: Save lap times to CSV with automatic calculations
+- **Lap Splits Image Generation**: Automatically create composite images showing all lap times overlaid on final screenshots
 - **Fuzzy Matching**: Uses intelligent matching to handle OCR errors and variations
-- **Cross-Platform**: Pure Python implementation works on Windows, macOS, and Linux
-- **Queue System**: Automatic queuing when CSV files are locked, with manual processing option
-- **Advanced Scene Switcher Integration**: Works seamlessly with OBS macros and scene switching
-- **Variable-Based Inputs**: Use OCR variables, counters, or any Advanced Scene Switcher variable as input
+- **Cross-Platform**: Pure Python implementation works on Windows, macOS, and Linux (Currently only Windows is tested)
+- **Queue System**: Automatic queuing when CSV files are locked, and an option to manually process the queue
+- **Variable-Based Inputs**: Use Advanced Scene Switcher variables as inputs for the macro actions
+
+## Table of Contents  <!-- omit in toc -->
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Step 0: Install Python 3.10](#step-0-install-python-310)
+  - [Step 1: Download from Releases](#step-1-download-from-releases)
+  - [Step 2: Enable the C++ backend](#step-2-enable-the-c-backend)
+  - [Step 3: Install Advanced Scene Switcher](#step-3-install-advanced-scene-switcher)
+  - [Step 4: Add the Python Script](#step-4-add-the-python-script)
+- [Usage](#usage)
+  - [Quick start: import provided macros (recommended)](#quick-start-import-provided-macros-recommended)
+  - [Available Actions](#available-actions)
+    - [1. MKW Track Action](#1-mkw-track-action)
+    - [2. MKW Save Lap Action](#2-mkw-save-lap-action)
+    - [3. MKW Move Old Images Action](#3-mkw-move-old-images-action)
+    - [4. MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action)
+- [Macro Setup Guide](#macro-setup-guide)
+  - [Overview of Macro System](#overview-of-macro-system)
+  - [1. Game State Detection Macros](#1-game-state-detection-macros)
+    - [Racing Status Detection](#racing-status-detection)
+    - [Current Track Detection](#current-track-detection)
+    - [Current Time Detection](#current-time-detection)
+    - [Coins Detection](#coins-detection)
+    - [Mushroom Usage Detection](#mushroom-usage-detection)
+    - [Ghost Replay Detection](#ghost-replay-detection)
+  - [2. Control Macros](#2-control-macros)
+    - [Time Trial Start](#time-trial-start)
+  - [3. Screenshot/Record Data Macros](#3-screenshotrecord-data-macros)
+    - [Lap End](#lap-end)
+    - [Time Trial Finish](#time-trial-finish)
+  - [Configuration Tips](#configuration-tips)
+    - [File Paths](#file-paths)
+    - [Testing and Calibration](#testing-and-calibration)
+  - [Troubleshooting Macro Issues](#troubleshooting-macro-issues)
+  - [Data Output](#data-output)
+    - [CSV File Structure](#csv-file-structure)
+    - [Using Variables](#using-variables)
+- [Contributing](#contributing)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Debug Information](#debug-information)
+- [For Developers](#for-developers)
 
 ## Prerequisites
 
@@ -32,36 +80,62 @@ Before setting up this script, ensure you have:
 
 1. **OBS Studio** (latest version recommended)
 2. **Advanced Scene Switcher Plugin** - Download from [GitHub](https://github.com/WarmUpTill/SceneSwitcher)
+3. **Python 3.10** - Download from [official website](https://www.python.org/downloads/)
+   - Other versions have not been tested, I cannot guarantee it will compatible.
 
 ## Installation
 
-### Step 1: Clone the Repository
+### Step 0: Install Python 3.10
 
-First, clone this repository to your local machine:
+Download and install Python 3.10 from the [official website](https://www.python.org/downloads/).
 
-```bash
-git clone https://github.com/getBoolean/mk-time-trial-tracker
-cd mk-time-trial-tracker
-```
+### Step 1: Download from Releases
 
-Or download the repository as a ZIP file:
+1. Go to the [Latest Release](https://github.com/getBoolean/mk-time-trial-tracker/releases/latest) and download the latest platform bundle for your OS.
+   - Names look like: `bundle-windows-latest-py310.zip`, `bundle-ubuntu-latest-py310.zip`, `bundle-macos-latest-py310.zip`.
+2. Extract the ZIP to your desired location (e.g., `C:\dev\mk-time-trial-tracker` or `~/mk-time-trial-tracker`).
 
-1. Click the green **Code** button on the GitHub repository page
-2. Select **Download ZIP**
-3. Extract the ZIP file to your desired location
+### Step 2: Enable the C++ backend
 
-### Step 2: Install Advanced Scene Switcher
+This is highly recommended if you will be using the splits image generation feature, otherwise it will fallback to pure Python and take up to 30 seconds to generate a single splits image.
+
+1. Open a terminal and navigate to the extracted folder.
+1. Install the included binaries from the `wheelhouse/` folder for faster splits image generation (run these from the extracted folder).
+   - Windows (PowerShell):
+
+     ```powershell
+     py -m pip install --upgrade pip
+     py -m pip install (Resolve-Path wheelhouse\*.whl)
+     ```
+
+     CMD alternative:
+
+     ```cmd
+     py -m pip install --upgrade pip
+     for %f in (wheelhouse\*.whl) do py -m pip install "%f"
+     ```
+
+   - macOS/Linux:
+
+     ```bash
+     python3 -m pip install --upgrade pip
+     python3 -m pip install wheelhouse/*.whl
+     ```
+
+### Step 3: Install Advanced Scene Switcher
 
 1. Download the Advanced Scene Switcher plugin from the [official repository](https://github.com/WarmUpTill/SceneSwitcher)
 2. Install the plugin following the instructions in the repository
 3. Restart OBS Studio after installation
+4. Configure Advanced Scene Switcher to use Python 3.10
+   - OBS → **Tools** → **Scripts** → **Python Settings** → enter the path to the Python 3.10 directory
 
-### Step 3: Add the Script
+### Step 4: Add the Python Script
 
 1. Open OBS Studio
 2. Go to **Tools** → **Scripts**
 3. Click the **+** button to add a new script
-4. Navigate to the cloned repository folder and select `TimeTrialTracker.py`
+4. Navigate to the extracted folder (or cloned repo) and select `TimeTrialTracker.py`
 5. Click **OK** to load the script
 6. Configure the script properties:
    - **Base Path**: Directory where CSV files will be saved (default: `G:\OBS\Mario Kart World\time trials`)
@@ -108,16 +182,39 @@ ${Script Repo Path}\templates\macro-template.json
 
 ## Usage
 
+A number of custom Advanced Scene Switcher macros are provided and can integrate with your existing OBS setup.
+
+### Quick start: import provided macros (recommended)
+
+You can import a ready-made macro setup as a starting point:
+
+1. In OBS, go to **Tools** → **Advanced Scene Switcher** → Macros.
+2. Right click the Macros list → **Import** and select `macros-export.json` from this repo.
+   - **Download**: [macros-export.json](./macros-export.json)
+
+   ![Import Macros](docs/import-macro.png)
+
+3. After import, adjust these items in all macros to match your setup:
+   - **Capture source name**: Replace `AverMedia Live Gamer 4K 2.1` with your video capture source.
+   - **File paths**: Update any `C:\dev\mk-time-trial-tracker\...` paths if your repo is saved elsewhere.
+   - **Screenshot save paths**: Change `G:\OBS\Mario Kart World\...` to your desired location.
+   - **OCR regions/colors**: The macros include example OCR areas and colors tuned to a 4K capture; tweak the areas and thresholds for your resolution/theme if needed.
+   - **Script action**: Ensure the actions `MKW Track`, `MKW Save Lap`, and `MKW Move Old Images` are present and configured correctly.
+   - **Adjust pixel selections**: The pixel positions for every "Perform check only in area` section are for 2160p (4K) resolution videos. If your capture card is not 4K, you will have to do a little math to get the approximate value.
+      - 1080p: 4k pixels / 2
+      - 1440p: 4k pixels / 3 * 2
+      - Others: 4k pixels / (2160/width)
+
 ### Available Actions
 
-The script provides three main Advanced Scene Switcher actions:
+The script provides four main Advanced Scene Switcher actions:
 
 #### 1. MKW Track Action
 
 Automatically identifies track names from OCR text.
 
 - **OCR Text Variable Name**: Variable containing the OCR text to process
-- **Output**: Sets `identified_track` and `identified_track_safe` temporary variables
+- **Output**: Sets `Identified Track` and `Identified Track (Filename Safe)` macro properties
 
 #### 2. MKW Save Lap Action  
 
@@ -135,29 +232,41 @@ Records lap times to CSV with automatic calculations.
 **Direct Input:**
 
 - **Is Final Lap**: Checkbox to indicate if this is the final lap of the run
+- **Create Split Image after Final Lap**: Checkbox to indicate if a split image should be created after the final lap.
+  - Only used if `Is Final Lap` is also checked.
+  - Alternatively use [MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action) to control it manually.
 
 #### 3. MKW Move Old Images Action
 
-Moves image files matching a pattern to a destination subfolder for organization.
+Moves image files matching a pattern to a destination subfolder for file organization. This keeps only the current run's screenshots at the base directory.
 
 **Direct Inputs:**
 
 - **File Pattern**: Pattern to match files (default: `Lap-*.png`)
-- **Destination Subfolder**: Subfolder name to move files to (default: `lap times`)
+- **Destination Subfolder**: Subfolder name to move old lap screenshots to (default: `lap times`)
 
-### Quick start: import provided macros (recommended)
+#### 4. MKW Generate Lap Splits Image Action
 
-You can import a ready-made macro setup as a starting point:
+Generates a composite image showing all lap times for a specific run overlaid on a screenshot.
 
-1. In OBS, go to **Tools** → **Advanced Scene Switcher** → Macros.
-2. Open the Macros menu (⋯) → **Import** and select `macros-export.json` from this repo.
-   - **Download**: [macros-export.json](./macros-export.json)
-3. After import, adjust these items in all macros to match your setup:
-   - **Capture source name**: Replace `AverMedia Live Gamer 4K 2.1` with your video capture source.
-   - **File paths**: Update any `C:\dev\mk-time-trial-tracker\...` paths if your repo is saved elsewhere.
-   - **Screenshot save paths**: Change `G:\OBS\Mario Kart World\...` to your desired location.
-   - **OCR regions/colors**: The macros include example OCR areas and colors tuned to a 4K capture; tweak the areas and thresholds for your resolution/theme if needed.
-   - **Script action**: Ensure the actions `MKW Track`, `MKW Save Lap`, and `MKW Move Old Images` are present and configured correctly.
+**Variable Inputs:**
+
+- **Run Number Variable Name**: Variable containing the run number to generate image for
+- **Screenshot Path Variable**: (Optional) Variable containing path to specific screenshot to use as base
+  - If not provided, the screenshot with the run number in its name will be used.
+
+**Features:**
+
+- Automatically combines lap times with screenshot (generated from the final screenshot)
+- Shows individual lap times and total time
+- Shows shrooms used each lap (only accurate if you do not lose your shrooms to Lakitu)
+- Shows coins collected each lap (only accurate if you do not lose coins during the race)
+- Outputs file named `Splits_[Track]_Run-[X].png`
+- Automatically triggered when final lap is saved with `Is Final Lap` and `Create Split Image after Final Lap` are checked
+
+**Example output:**
+
+![Lap Splits Image](docs/LapTimes_image.png)
 
 ## Macro Setup Guide
 
@@ -167,34 +276,51 @@ This section provides detailed setup instructions for each macro included in the
 
 The macro system consists of several interconnected macros that handle different aspects of time trial tracking:
 
-1. **Detection Macros**: Monitor game state (racing status, track, time, coins, mushrooms)
+1. **Detection Macros**: Monitor game state (racing status, ghost replay, track, time, coins, mushrooms)
 2. **Control Macros**: Handle time trial start/end events
 3. **Screenshot Macros**: Capture images at key moments (lap end, time trial end)
 
 ### 1. Game State Detection Macros
 
+#### Racing Status Detection
+
+Determines if a race is currently active, allowing more efficient use of resources when not racing.
+
+![Racing Status](docs/is-racing-macro.png)
+
+**Conditions**:
+
+1. Configure the path to the `lapFlag.png` file
+2. Configure the `Perform check only in area` section to the flag next to the lap counter
+3. Ensure `Run macro in parallel to other macros` is disabled
+4. Test the macro with `Show match`
+
 #### Current Track Detection
 
-**Purpose**: Identifies the current track from OCR text and sets track variables.
+Identifies the current track from OCR text and sets track variables.
 
+**Conditions**:
 ![Current Track Conditions](docs/current-track-macro-conditions.png)
+
+**Actions**:
 ![Current Track Actions](docs/current-track-macro-actions.png)
 
-**Setup Steps**:
+**Conditions Setup**:
 
-1. Configure OCR conditions to detect track name area
-2. Set up the MKW Track script action with proper variable names
-3. Ensure output variables are set for other macros to use
+1. Configure `Sees MKW Logo` path to the `mkLogo.png` file
+1. Configure the `Perform check only in area` section to the MKW logo on the track loading screen screen
+1. Configure the `Track Name` condition to the track name on the track loading screen.
+   - Ensure it is wide enough for the longest track names, but not too wide or tall that it includes the background, which confuses the OCR detection.
 
-**Key Settings**:
+**Actions Setup**:
 
-- OCR region should cover the track name display area
-- OCR Text Variable Name: `Current Track OCR` (default)
-- Output variables: `identified_track` and `identified_track_safe`
+1. Create variable `Current Track OCR` and have it set to the `OCR text` macro property
+1. Create variable `Current Track` and have it set to the `Identified Track` macro property, ensure the variable has enabled `Save variable value`
+1. Create variable `Current Track Filename Safe` and have it set to the `Identified Track (Filename Safe)` macro property, ensure the variable has enabled `Save variable value`
 
 #### Current Time Detection
 
-The system includes macros to detect the current race time, with different configurations for different time display colors:
+Detect the current race time, white for the normal timer and yellow for when finishing a lap:
 
 **White Time Display**:
 ![Current Time White](docs/current-time-white-macro.png)
@@ -202,152 +328,197 @@ The system includes macros to detect the current race time, with different confi
 **Yellow Time Display**:
 ![Current Time Yellow](docs/current-time-yellow-macro.png)
 
-**Setup Steps**:
+- **Note:** Ensure `Perform actions only on condition change` is disabled for both macros.
 
-1. Configure OCR to detect the time display area
-2. Set up different macros for different time colors (white/yellow)
-3. Adjust OCR thresholds for your game's time display
+**Conditions Setup**:
+
+1. Configure the `Current Time` condition's `Perform check only in area` section to the race time display
+
+**Actions Setup**:
+
+1. Create variable `Current Lap Time OCR` and have it set to the `OCR text` macro property
 
 #### Coins Detection
 
-**Purpose**: Tracks total coins collected during the race.
+Tracks total coins collected during the race.
 
 ![Current Coins](docs/current-coins-macro.png)
 
-**Setup Steps**:
+**Conditions Setup**:
 
-1. Set OCR region to cover the coin counter
-2. Configure OCR to recognize coin count numbers
-3. Store result in `Current Coins` variable
+1. Configure `Sees Coins`'s path to the `coins.png` file
+1. Configure `Sees Coins`'s `Perform check only in area` section to the coin icon next to the coin counter
+1. Configure `Coin Count`'s `Perform check only in area` section to the coin counter
+
+**Actions Setup**:
+
+1. Create variable `CurrentCoins` and have it set to the `OCR text` macro property, ensure the variable has enabled `Save variable value`
 
 #### Mushroom Usage Detection
 
 The system tracks mushroom usage with separate macros for different counts:
 
-**No Mushrooms (0)**:
-![0 Mushrooms](docs/0shroom-macro.png)
-
-**1 Mushroom Used**:
+**1 Mushroom Left**:
 ![1 Mushroom](docs/1shroom-macro.png)
 
-**2 Mushrooms Used**:
+**2 Mushrooms Left**:
 ![2 Mushrooms](docs/2shroom-macro.png)
 
-**3 Mushrooms Used**:
+**3 Mushrooms Left**:
 ![3 Mushrooms](docs/3shroom-macro.png)
 
-**Setup Steps**:
+**No Mushrooms Left**:
+![0 Mushrooms](docs/0shroom-macro.png)
 
-1. Configure each macro to detect the corresponding mushroom count display
-2. Set appropriate OCR regions and thresholds
-3. Update mushroom counter variables accordingly
+**Conditions Setup**:
 
-#### Racing Status Detection
+1. For `1shroom`, `2shrooms`, and `3shrooms` macros:
+   - Configure the `Perform check only in area` section to the items section
+   - Configure the path to the corresponding `1shroom.png`, `2shrooms.png`, or `3shrooms.png` file
+   - Ensure `Run macro in parallel to other macros` is disabled
+1. No changes needed for the `0shrooms` macro
 
-**Purpose**: Determines if a race is currently active.
+**Actions Setup**:
 
-![Racing Status](docs/is-racing-macro.png)
+1. Create variable `UsedShrooms`, ensure the variable has enabled `Save variable value`
+   - `1shroom` sets it to 2
+   - `2shrooms` sets it to 1
+   - `3shrooms` sets it to 0
+   - `0shrooms` sets it to 3
 
-**Setup Steps**:
+#### Ghost Replay Detection
 
-1. Configure conditions to detect racing UI elements
-2. Set up boolean variable to track racing state
-3. Use this as a condition for other race-dependent macros
+Determines if a ghost replay is currently active.
+
+**Start Time Trial**:`
+![Start Time Trial](docs/is-start-time-trial-macro.png)
+
+**View Replay**:
+![View Replay](docs/is-view-ghost-macro.png)
+
+**Race Against Ghost**:
+![Race Against Ghost](docs/is-race-against-ghost-selected-macro.png)
+
+**Conditions Setup**:
+
+1. For `Start Time Trial` and `View Replay` macros:
+   - Configure the `Perform check only in area` section to the text above the `OK` button when starting a time trial or viewing a ghost replay
+   - Configure the path to the corresponding `startTimeTrial.png` and `viewReplay.png` file
+   - Enable the `Use alpha channel as mask for pattern` checkbox both macros
+1. For `Race Against Ghost` macro:
+   - Configure `Sees Race Against Ghost Selected` and `Sees Race Against Ghost Not Selected`'s `Perform check only in area` section to the button in the pause menu when racing against a ghost
+   - Configure the path to the corresponding `raceAgainstGhostSelected.png` and `raceAgainstGhostNotSelected.png` files
+   - Enable the `Use alpha channel as mask for pattern` checkbox for both video conditions
+
+**Actions Setup**:
+
+1. Create variable `IsGhost` (ensure the variable has enabled `Save variable value`)
+   - `is-start-time-trial` and `is-race-against-ghost-selected` sets it to false
+   - `is-view-ghost` sets it to true
 
 ### 2. Control Macros
 
 #### Time Trial Start
 
-**Purpose**: Triggers when a time trial begins, initializing tracking variables.
+Triggers when a time trial begins, initializing tracking variables.
 
+**Conditions**:
 ![TT Start Conditions](docs/tt-start-macro-conditions.png)
+
+**Actions**:
 ![TT Start Actions](docs/tt-start-macro-actions.png)
 
-**Setup Steps**:
+**Conditions Setup**:
 
-1. Configure conditions to detect time trial start (e.g., timer starting)
-2. Set up actions to initialize run variables
-3. Reset lap counters and other tracking variables
+1. Configure the `Perform check only in area` section to the time trial timer
+1. Configure the path to the `time-zero.png` file
+1. Enable the `Use alpha channel as mask for pattern` checkbox
+1. Increase `Threshold` to `0.99999`, otherwise it will get false positives due to the transparent background
 
-**Key Actions**:
+**Actions Setup**:
 
-- Initialize run number counter
-- Reset lap counter to 1
-- Clear previous lap time data
-- Set up initial screenshot if needed
+1. Create variable `Current TT Lap` and have it set to `1`, ensure the variable has enabled `Save variable value`
+1. Create variable `Next TT Lap` and have it set to `2`, ensure the variable has enabled `Save variable value`
+1. Create variable `TT Run Number` and have it increment by `1`, ensure the variable is set to `Save variable value`
+1. In the `MKW Move Old Images` action
+   - Configure the `File Pattern` to the naming pattern you use in the [Lap End](#lap-end) section, blob patterns are supported (e.g., `Lap-*.png`)
+   - Configure the `Destination Subfolder` name for old lap images to be moved to in the base directory (e.g., `lap times`)
 
-### 3. Screenshot Macros
+### 3. Screenshot/Record Data Macros
 
-#### Lap End Screenshots
+#### Lap End
 
-**Purpose**: Captures screenshots at the end of each lap with lap time data.
+Captures screenshots at the end of each lap and saves the lap time data.
 
+**Conditions**:
 ![Lap End Conditions](docs/screenshot-lap-end-macro-conditions.png)
+
+**Actions**:
 ![Lap End Actions](docs/screenshot-lap-end-macro-actions.png)
 
-**Setup Steps**:
+**Conditions Setup**:
 
-1. Configure conditions to detect lap completion
-2. Set up screenshot action with proper file naming
-3. Configure MKW Save Lap script action for data recording
+1. Should only run if `IsGhost` is false
+1. Configure `Current Lap is Next Lap` condition's `Perform check only in area` section to the lap counter
 
-**Key Settings**:
+**Actions Setup**:
 
-- Screenshot path: Include lap number and timestamp in filename
-- MKW Save Lap action: Configure all required variable inputs
-- File organization: Use MKW Move Old Images if needed
+1. Optionally take a screenshot. This is not used by the script, it is for your own records and to double check the lap time data.
+   - The name should follow a pattern like `Lap-*.png`
+   - If you want it moved to the `lap times` subfolder with the `MKW Move Old Images` action from the [Time Trial Start](#time-trial-start) section, ensure it conforms to the naming pattern (e.g., starts with `Lap-` and ends with `.png`)
+   - You can use variables in the file/folder path, e.g., `Lap-Screenshot_Track-${Current Track Filename Safe}_Run-${TT Run Number}_Lap-${Current TT Lap}.png`
+1. Configure the `MKW Save Lap` action with the corresponding variables
+   - Ensure `Is Final Lap` is set to `false`
+1. `Current TT Lap` is set to `${Next TT Lap}`
+1. `Next TT Lap` is set to `${Current TT Lap} + 1`
 
-#### Time Trial End Screenshots
+#### Time Trial Finish
 
-**Purpose**: Captures final screenshot when time trial completes.
+Captures final screenshot when time trial completes.
 
+**Conditions**:
 ![TT End Conditions](docs/screenshot-tt-end-macro-conditions.png)
+
+**Actions**:
 ![TT End Actions](docs/screenshot-tt-end-macro-actions.png)
 
-**Setup Steps**:
+**Conditions Setup**:
 
-1. Configure conditions to detect time trial completion
-2. Set up final screenshot capture
-3. Process final lap data and organize files
+1. Only runs if `Current TT Lap` is not `0` (prevents duplicate screenshots)
+1. Configure `Is Results Screen` condition's `Perform check only in area` section to cover both time trail results boxes
+1. Configure the path to the `tt-results.png` file
 
-**Key Actions**:
+**Actions Setup**:
 
-- Capture final results screenshot
-- Save final lap time with MKW Save Lap action (with "Is Final Lap" checked)
-- Move/organize screenshot files using MKW Move Old Images
+1. Take a screenshot for the splits image, ensure it ends with `-Final.png`
+   - It should follow the same naming pattern as the [Lap End](#lap-end) section, but ends with `-Final.png` instead of `.png`
+   - It is important to include `Run-${TT Run Number}` in the filename for the [MKW Generate Lap Splits Image Action](#4-mkw-generate-lap-splits-image-action) action to work.
+1. Configure the `MKW Save Lap` action with the corresponding variables
+   - Ensure `Is Final Lap` is set to `true`
+   - Enable `Create Split Image after Final Lap` for a sharable splits image.
+   - **Note:** The split image generation will take a significant amount of time if you do not enable the C++ backend in the [Installation](#installation) section.
+1. Sets `Current TT Lap` to `0`
 
 ### Configuration Tips
-
-#### OCR Settings
-
-1. **Resolution**: The provided macros are configured for 4K capture. Adjust OCR regions proportionally for other resolutions.
-2. **Color Thresholds**: Adjust color matching thresholds based on your game's theme and capture settings.
-3. **Text Recognition**: Fine-tune OCR settings for better accuracy with your specific setup.
-
-#### Variable Management
-
-1. **Consistent Naming**: Ensure variable names match between macros (e.g., `Current Track`, `Current Coins`)
-2. **Counter Setup**: Configure counters in Advanced Scene Switcher for run numbers and lap numbers
-3. **Temporary Variables**: The script uses temporary variables that don't persist between OBS sessions
 
 #### File Paths
 
 1. **Screenshot Locations**: Organize screenshots by track using variables: `G:\OBS\Mario Kart World\${Current Track}\`
-2. **CSV Output**: Configure base path in script properties for CSV file location
-3. **Image Organization**: Use MKW Move Old Images action to keep screenshots organized
+1. **CSV Output**: Configure base path in script properties for CSV file location
+1. **Image Organization**: Use `MKW Move Old Images` action to keep screenshots organized
 
 #### Testing and Calibration
 
 1. **Test Each Macro**: Run through a complete time trial to ensure all macros trigger correctly
-2. **Check OCR Accuracy**: Verify that text recognition works reliably with your setup
-3. **Validate Data Output**: Confirm that lap times and other data are recorded accurately in CSV files
+1. **Check OCR Accuracy**: Verify that text recognition works reliably with your setup
+1. **Validate Data Output**: Confirm that lap times and other data are recorded accurately in CSV files
 
 ### Troubleshooting Macro Issues
 
 1. **OCR Not Triggering**: Check OCR region positioning and color thresholds
-2. **Variables Not Found**: Verify variable names match exactly between macros and script actions
-3. **Screenshots Not Capturing**: Confirm source names and file paths are correct
-4. **Data Not Recording**: Check that MKW script actions are properly configured with variable inputs
+1. **Variables Not Found**: Verify variable names match exactly between macros and script actions
+1. **Screenshots Not Capturing**: Confirm source names and file paths are correct
+1. **Data Not Recording**: Check that MKW script actions are properly configured with variable inputs
 
 ### Data Output
 
@@ -369,44 +540,21 @@ Lap times are saved to `lap_times.csv` in your configured base path with these c
 
 The script exposes macro properties (temporary variables) that can be used in other actions:
 
-- `identified_track`: Canonical track name from OCR
-- `identified_track_safe`: Filesystem-safe version of track name
-- `script_repo_path`: Path to the script repository from configured variable
+- `Identified Track`: Canonical track name from OCR
+- `Identified Track (Filename Safe)`: Filesystem-safe version of track name
+- `Script Repo Path`: Path to the script repository from configured variable
 
 To use these elsewhere:
 
 1. Add a **Variable** action after the `MKW Track` script action
 2. Set **Variable name** to e.g. `Current Track`  
-3. Set the value from **Temp variable** → select `identified_track`
+3. Set the value from **Macro properties** → select `Identified Track`
 
 You can then reference variables in macros using `${Variable Name}`. Examples:
 
 - File path: `C:\OBS\Mario Kart World\${Current Track}\`
 - Text: `Current Track: ${Current Track}`
 - MKW image: `${Script Repo Path}\mkLogo.png`
-
-## Advanced Configuration
-
-### Custom Track Names
-
-If you need to add custom track names or aliases, you can modify the `alias_to_canonical` dictionary in the script:
-
-```python
-alias_to_canonical = {
-    "your custom name": "Canonical Track Name",
-    # ... existing aliases
-}
-```
-
-### Queue System
-
-The lap time recording system includes automatic queuing:
-
-- **When CSV is locked**: Lap times are automatically queued to `lap_times_queue.json`
-- **Manual processing**: Use the "Process Queue Now" button in script properties
-- **Auto-processing**: The script attempts to flush the queue before each new save
-
-This ensures no lap times are lost even if the CSV file is open in Excel or another program.
 
 ## Contributing
 
@@ -431,3 +579,30 @@ The script logs detailed information to the OBS Script Log:
 - Queue processing activities
 
 Access logs via **Tools** → **Scripts** → **Script Log** in OBS.
+
+## For Developers
+
+Clone the repository
+
+```bash
+git clone https://github.com/getBoolean/mk-time-trial-tracker
+cd mk-time-trial-tracker
+```
+
+If changes are made to the C++ backend extention, you must rebuild the wheel:
+
+Windows:
+
+```powershell
+py -m pip install --upgrade pip build
+py -m build --wheel
+py -m pip install dist\*.whl
+```
+
+macOS/Linux:
+
+```bash
+python3 -m pip install --upgrade pip build
+python3 -m build --wheel
+python3 -m pip install dist/*.whl
+```
